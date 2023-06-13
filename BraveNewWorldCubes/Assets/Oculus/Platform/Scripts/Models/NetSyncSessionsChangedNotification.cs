@@ -11,7 +11,6 @@ namespace Oculus.Platform.Models
   public class NetSyncSessionsChangedNotification
   {
     public readonly long ConnectionId;
-    /// The new list of sessions
     public readonly NetSyncSessionList Sessions;
 
 

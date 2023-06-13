@@ -44,7 +44,7 @@ namespace Oculus.Interaction.PoseDetection.Debug
 
         protected virtual void Awake()
         {
-            this.AssertField(_lineRenderer, nameof(_lineRenderer));
+            Assert.IsNotNull(_lineRenderer);
 
             _lineRenderer.enabled = false;
         }

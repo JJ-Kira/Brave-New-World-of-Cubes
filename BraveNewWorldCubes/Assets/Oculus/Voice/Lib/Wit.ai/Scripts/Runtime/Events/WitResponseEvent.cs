@@ -7,10 +7,10 @@
  */
 
 using System;
-using Meta.WitAi.Json;
+using Facebook.WitAi.Lib;
 using UnityEngine.Events;
 
-namespace Meta.WitAi.Events
+namespace Facebook.WitAi.Events
 {
     [Serializable]
     public class WitResponseEvent : UnityEvent<WitResponseNode>

@@ -1,6 +1,5 @@
 //This file is deprecated.  Use the high level voip system instead:
 // https://developer3.oculus.com/documentation/platform/latest/concepts/dg-core-content/#dg-cc-voip
-
 #if false
 using UnityEngine;
 using System.Collections;

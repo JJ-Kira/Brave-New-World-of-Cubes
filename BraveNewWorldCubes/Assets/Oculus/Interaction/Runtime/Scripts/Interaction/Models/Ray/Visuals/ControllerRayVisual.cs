@@ -49,9 +49,6 @@ namespace Oculus.Interaction
         [SerializeField]
         private Color _selectColor1 = Color.blue;
 
-        [SerializeField]
-        private bool _hideWhenNoInteractable = false;
-
         #region Properties
 
         public float MaxRayVisualLength
@@ -129,9 +126,9 @@ namespace Oculus.Interaction
         protected virtual void Start()
         {
             this.BeginStart(ref _started);
-            this.AssertField(_rayInteractor, nameof(_rayInteractor));
-            this.AssertField(_renderer, nameof(_renderer));
-            this.AssertField(_materialPropertyBlockEditor, nameof(_materialPropertyBlockEditor));
+            Assert.IsNotNull(_rayInteractor);
+            Assert.IsNotNull(_renderer);
+            Assert.IsNotNull(_materialPropertyBlockEditor);
             this.EndStart(ref _started);
         }
 
@@ -153,15 +150,14 @@ namespace Oculus.Interaction
             }
         }
 
-        private void HandleStateChanged(InteractorStateChangeArgs args)
+        private void HandleStateChanged(InteractorStateChangeArgs obj)
         {
             UpdateVisual();
         }
 
         private void UpdateVisual()
         {
-            if (_rayInteractor.State == InteractorState.Disabled ||
-                (_hideWhenNoInteractable && _rayInteractor.Interactable == null))
+            if (_rayInteractor.State == InteractorState.Disabled)
             {
                 _renderer.enabled = false;
                 return;

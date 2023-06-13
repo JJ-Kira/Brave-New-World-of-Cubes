@@ -6,10 +6,10 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-using Meta.WitAi.TTS.Data;
-using Meta.WitAi.TTS.Events;
+using Facebook.WitAi.TTS.Data;
+using Facebook.WitAi.TTS.Events;
 
-namespace Meta.WitAi.TTS.Interfaces
+namespace Facebook.WitAi.TTS.Interfaces
 {
     public interface ITTSRuntimeCacheHandler
     {
@@ -34,9 +34,7 @@ namespace Meta.WitAi.TTS.Interfaces
         /// <summary>
         /// Method for adding a clip to the cache
         /// </summary>
-        /// <param name="clipData"></param>
-        /// <returns></returns>
-        bool AddClip(TTSClipData clipData);
+        void AddClip(TTSClipData clipData);
         /// <summary>
         /// Method for removing a clip from the cache
         /// </summary>

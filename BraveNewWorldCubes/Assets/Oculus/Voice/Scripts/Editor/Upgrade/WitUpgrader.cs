@@ -18,7 +18,7 @@
  * limitations under the License.
  */
 
-using Meta.WitAi;
+using Facebook.WitAi;
 using UnityEditor;
 using UnityEngine;
 
@@ -43,7 +43,7 @@ namespace Oculus.Voice.Upgrade
                 if (!Application.isPlaying && GUILayout.Button(Styles.upgrade))
                 {
                     var voiceService = wit.gameObject.AddComponent<AppVoiceExperience>();
-                    voiceService.VoiceEvents = wit.VoiceEvents;
+                    voiceService.events = wit.events;
                     voiceService.RuntimeConfiguration = wit.RuntimeConfiguration;
                     var voiceServiceSerializedObject = new SerializedObject(voiceService);
                     voiceServiceSerializedObject.ApplyModifiedProperties();

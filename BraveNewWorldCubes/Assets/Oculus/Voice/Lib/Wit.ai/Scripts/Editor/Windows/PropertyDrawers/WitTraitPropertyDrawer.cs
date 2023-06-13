@@ -9,7 +9,7 @@
 using UnityEditor;
 using System.Reflection;
 
-namespace Meta.WitAi.Windows
+namespace Facebook.WitAi.Windows
 {
     public class WitTraitPropertyDrawer : WitPropertyDrawer
     {

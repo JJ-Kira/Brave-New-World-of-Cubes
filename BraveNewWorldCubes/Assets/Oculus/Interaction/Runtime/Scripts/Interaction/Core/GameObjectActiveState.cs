@@ -47,7 +47,7 @@ namespace Oculus.Interaction
 
         protected virtual void Start()
         {
-            this.AssertField(_sourceGameObject, nameof(_sourceGameObject));
+            Assert.IsNotNull(_sourceGameObject);
         }
 
         public bool Active => _sourceActiveSelf

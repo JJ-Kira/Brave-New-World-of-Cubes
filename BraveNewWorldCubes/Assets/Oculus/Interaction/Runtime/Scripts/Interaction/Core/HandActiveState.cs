@@ -20,14 +20,15 @@
 
 using Oculus.Interaction.Input;
 using UnityEngine;
+using UnityEngine.Assertions;
+using UnityEngine.Serialization;
 
 namespace Oculus.Interaction
 {
     public class HandActiveState : MonoBehaviour, IActiveState
     {
-        [Tooltip("ActiveState will be true while this hand is connected.")]
         [SerializeField, Interface(typeof(IHand))]
-        UnityEngine.Object _hand;
+        MonoBehaviour _hand;
         private IHand Hand;
 
         public bool Active => Hand.IsConnected;
@@ -39,7 +40,7 @@ namespace Oculus.Interaction
 
         protected virtual void Start()
         {
-            this.AssertField(Hand, nameof(Hand));
+            Assert.IsNotNull(Hand);
         }
 
         #region Inject
@@ -51,7 +52,7 @@ namespace Oculus.Interaction
 
         public void InjectHand(IHand hand)
         {
-            _hand = hand as UnityEngine.Object;
+            _hand = hand as MonoBehaviour;
             Hand = hand;
         }
 

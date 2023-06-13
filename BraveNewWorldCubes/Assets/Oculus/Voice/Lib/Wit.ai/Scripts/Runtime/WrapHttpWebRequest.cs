@@ -11,7 +11,7 @@ using System.IO;
 using System.Net;
 using UnityEngine;
 
-namespace Meta.WitAi
+namespace Facebook.WitAi
 {
     public class WrapHttpWebRequest : IRequest
     {

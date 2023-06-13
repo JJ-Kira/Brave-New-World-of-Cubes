@@ -7,10 +7,11 @@
  */
 
 using System;
-using Meta.WitAi.Data;
+using Facebook.WitAi.Lib;
+using Facebook.WitAi.Data;
 using UnityEngine.Events;
 
-namespace Meta.WitAi.Events
+namespace Facebook.WitAi.Events
 {
     [Serializable]
     public class WitValidationEvent : UnityEvent<VoiceSession>

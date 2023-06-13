@@ -26,12 +26,9 @@ namespace Oculus.Interaction
 {
     public class ActiveStateSelector : MonoBehaviour, ISelector
     {
-        [Tooltip("ISelector events will be raised " +
-            "based on state changes of this IActiveState.")]
         [SerializeField, Interface(typeof(IActiveState))]
-        private UnityEngine.Object _activeState;
+        private MonoBehaviour _activeState;
         protected IActiveState ActiveState { get; private set; }
-
         private bool _selecting = false;
 
         public event Action WhenSelected = delegate { };
@@ -44,7 +41,7 @@ namespace Oculus.Interaction
 
         protected virtual void Start()
         {
-            this.AssertField(ActiveState, nameof(ActiveState));
+            Assert.IsNotNull(ActiveState);
         }
 
         protected virtual void Update()
@@ -72,7 +69,7 @@ namespace Oculus.Interaction
 
         public void InjectActiveState(IActiveState activeState)
         {
-            _activeState = activeState as UnityEngine.Object;
+            _activeState = activeState as MonoBehaviour;
             ActiveState = activeState;
         }
         #endregion

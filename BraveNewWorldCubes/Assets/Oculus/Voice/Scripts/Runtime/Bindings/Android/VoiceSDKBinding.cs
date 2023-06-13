@@ -18,7 +18,7 @@
  * limitations under the License.
  */
 
-using Meta.WitAi.Configuration;
+using Facebook.WitAi.Configuration;
 using Oculus.Voice.Core.Bindings.Android;
 using UnityEngine;
 
@@ -35,19 +35,34 @@ namespace Oculus.Voice.Bindings.Android
         public bool MicActive => binding.Call<bool>("isMicActive");
         public bool PlatformSupportsWit => binding.Call<bool>("isSupported");
 
+        public void Activate(string text)
+        {
+            binding.Call("activate", text, "");
+        }
+
         public void Activate(string text, WitRequestOptions options)
         {
-            binding.Call("activate", text, options.ToJsonString());
+            binding.Call("activate", text, JsonUtility.ToJson(options));
+        }
+
+        public void Activate()
+        {
+            binding.Call("activate");
         }
 
         public void Activate(WitRequestOptions options)
         {
-            binding.Call("activate", options.ToJsonString());
+            binding.Call("activate", JsonUtility.ToJson(options));
+        }
+
+        public void ActivateImmediately()
+        {
+            binding.Call("activateImmediately");
         }
 
         public void ActivateImmediately(WitRequestOptions options)
         {
-            binding.Call("activateImmediately", options.ToJsonString());
+            binding.Call("activateImmediately", JsonUtility.ToJson(options));
         }
 
         public void Deactivate()

@@ -22,10 +22,7 @@ namespace Meta.Conduit
         }
 
         /// <summary>
-        /// Different ways to refer to the same value. The first alias in the list will be treated as
-        /// keyword and additional aliases as synonyms.
-        /// Note: that if an alias is supplied, the original enum name is
-        /// not considered as an alias or keyword anymore unless explicitly specified as an alias.
+        /// Different ways to refer to the same value.
         /// </summary>
         public string[] Aliases { get; }
     }

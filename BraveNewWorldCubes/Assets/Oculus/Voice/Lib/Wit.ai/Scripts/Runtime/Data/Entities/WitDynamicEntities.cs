@@ -9,12 +9,11 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using Meta.WitAi.Interfaces;
-using Meta.WitAi.Json;
-using Meta.WitAi.Data.Info;
+using Facebook.WitAi.Interfaces;
+using Facebook.WitAi.Lib;
 using UnityEngine;
 
-namespace Meta.WitAi.Data.Entities
+namespace Facebook.WitAi.Data.Entities
 {
     [Serializable]
     public class WitDynamicEntities : IDynamicEntitiesProvider, IEnumerable<WitDynamicEntity>
@@ -84,7 +83,7 @@ namespace Meta.WitAi.Data.Entities
         {
             int index = entities.FindIndex(e => e.entity == dynamicEntity.entity);
             if(index < 0) entities.Add(dynamicEntity);
-            else VLog.W($"Cannot add entity, registry already has an entry for {dynamicEntity.entity}");
+            else Debug.LogWarning($"Cannot add entity, registry already has an entry for {dynamicEntity.entity}");
         }
 
         public void Remove(WitDynamicEntity dynamicEntity)
@@ -92,7 +91,7 @@ namespace Meta.WitAi.Data.Entities
             entities.Remove(dynamicEntity);
         }
 
-        public void AddKeyword(string entityName, WitEntityKeywordInfo keyword)
+        public void AddKeyword(string entityName, WitEntityKeyword keyword)
         {
             var entity = entities.Find(e => entityName == e.entity);
             if (null == entity)
@@ -103,7 +102,7 @@ namespace Meta.WitAi.Data.Entities
             entity.keywords.Add(keyword);
         }
 
-        public void RemoveKeyword(string entityName, WitEntityKeywordInfo keyword)
+        public void RemoveKeyword(string entityName, WitEntityKeyword keyword)
         {
             int index = entities.FindIndex(e => e.entity == entityName);
             if (index >= 0)

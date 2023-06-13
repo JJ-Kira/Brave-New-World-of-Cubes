@@ -8,39 +8,26 @@
 
 using System;
 using System.Reflection;
-using System.Text;
-using Meta.WitAi.Data;
-using Meta.WitAi.Json;
+using Facebook.WitAi.Data;
+using Facebook.WitAi.Lib;
 using Meta.Conduit;
 
-namespace Meta.WitAi
+namespace Facebook.WitAi
 {
-    [Obsolete ("Use ParameterProvider.SetSpecializedParameter() instead of this class")]
     internal class WitConduitParameterProvider : ParameterProvider
     {
+        public const string WitResponseNodeReservedName = "@WitResponseNode";
+        public const string VoiceSessionReservedName = "@VoiceSession";
         protected override object GetSpecializedParameter(ParameterInfo formalParameter)
         {
-            if (formalParameter.ParameterType == typeof(WitResponseNode) && ActualParameters.ContainsKey(WitResponseNodeReservedName.ToLower()))
+            if (formalParameter.ParameterType == typeof(WitResponseNode) && ActualParameters.ContainsKey(WitResponseNodeReservedName))
             {
-                return ActualParameters[WitResponseNodeReservedName.ToLower()];
+                return ActualParameters[WitResponseNodeReservedName];
             }
-            if (formalParameter.ParameterType == typeof(VoiceSession) && ActualParameters.ContainsKey(VoiceSessionReservedName.ToLower()))
+            else if (formalParameter.ParameterType == typeof(VoiceSession) && ActualParameters.ContainsKey(VoiceSessionReservedName))
             {
-                return ActualParameters[VoiceSessionReservedName.ToLower()];
+                return ActualParameters[VoiceSessionReservedName];
             }
-
-            // Log warning when not found
-            StringBuilder error = new StringBuilder();
-            error.AppendLine("Specialized parameter not found");
-            error.AppendLine($"Parameter Type: {formalParameter.ParameterType}");
-            error.AppendLine($"Parameter Name: {formalParameter.Name}");
-            error.AppendLine($"Actual Parameters: {ActualParameters.Keys.Count}");
-            foreach (var key in ActualParameters.Keys)
-            {
-                string val = ActualParameters[key] == null ? "NULL" : ActualParameters[key].GetType().ToString();
-                error.AppendLine($"\t{key}: {val}");
-            }
-            VLog.W(error.ToString());
             return null;
         }
 

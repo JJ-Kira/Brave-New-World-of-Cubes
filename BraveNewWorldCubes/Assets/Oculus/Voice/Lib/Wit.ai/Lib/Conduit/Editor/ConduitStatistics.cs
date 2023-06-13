@@ -8,8 +8,7 @@
 
 using System;
 using System.Collections.Generic;
-using Meta.WitAi;
-using Meta.WitAi.Json;
+using Meta.Wit.LitJson;
 using UnityEngine;
 
 namespace Meta.Conduit.Editor
@@ -23,15 +22,15 @@ namespace Meta.Conduit.Editor
         private const string ConduitSignatureFrequencyKey = "ConduitSignatureFrequency";
         private const string ConduitIncompatibleSignatureFrequencyKey = "ConduitIncompatibleSignatureFrequency";
         private readonly IPersistenceLayer _persistenceLayer;
-
+        
         public ConduitStatistics(IPersistenceLayer persistenceLayer)
         {
             _persistenceLayer = persistenceLayer;
             Load();
         }
-
+        
         /// <summary>
-        /// A randomly generated ID representing at telemetry report.
+        /// A randomly generated ID representing at telemetry report. 
         /// </summary>
         public Guid Id { get; set; }
 
@@ -51,7 +50,7 @@ namespace Meta.Conduit.Editor
         /// Similar to <see cref="SignatureFrequency"/> but for incompatible methods.
         /// </summary>
         public Dictionary<string, int> IncompatibleSignatureFrequency { get; private set; } = new Dictionary<string, int>();
-
+        
         /// <summary>
         /// Adds the supplied frequencies to the current collection.
         /// </summary>
@@ -60,7 +59,7 @@ namespace Meta.Conduit.Editor
         {
             AddFrequencies(this.SignatureFrequency, sourceFrequencies);
         }
-
+        
         /// <summary>
         /// Adds the supplied incompatible method frequencies to the current collection.
         /// </summary>
@@ -97,12 +96,12 @@ namespace Meta.Conduit.Editor
         {
             try
             {
-                var json = JsonConvert.SerializeObject(this.SignatureFrequency);
+                var json = JsonMapper.ToJson(this.SignatureFrequency);
                 _persistenceLayer.SetString(ConduitSignatureFrequencyKey, json);
 
-                json = JsonConvert.SerializeObject(this.IncompatibleSignatureFrequency);
+                json = JsonMapper.ToJson(this.IncompatibleSignatureFrequency);
                 _persistenceLayer.SetString(ConduitIncompatibleSignatureFrequencyKey, json);
-
+            
                 _persistenceLayer.SetInt(ConduitSuccessfulGenerationsKey, SuccessfulGenerations);
             }
             catch (Exception e)
@@ -125,7 +124,7 @@ namespace Meta.Conduit.Editor
                 if (_persistenceLayer.HasKey(ConduitSignatureFrequencyKey))
                 {
                     var json = _persistenceLayer.GetString(ConduitSignatureFrequencyKey);
-                    SignatureFrequency = JsonConvert.DeserializeObject<Dictionary<string, int>>(json);
+                    SignatureFrequency = JsonMapper.ToObject<Dictionary<string, int>>(json);
                 }
                 else
                 {
@@ -135,7 +134,7 @@ namespace Meta.Conduit.Editor
                 if (_persistenceLayer.HasKey(ConduitIncompatibleSignatureFrequencyKey))
                 {
                     var json = _persistenceLayer.GetString(ConduitIncompatibleSignatureFrequencyKey);
-                    IncompatibleSignatureFrequency = JsonConvert.DeserializeObject<Dictionary<string, int>>(json);
+                    IncompatibleSignatureFrequency = JsonMapper.ToObject<Dictionary<string, int>>(json);
                 }
                 else
                 {
@@ -144,7 +143,7 @@ namespace Meta.Conduit.Editor
             }
             catch (Exception e)
             {
-                VLog.E($"Failed to load Conduit statistics. {e}");
+                Debug.LogError($"Failed to load Conduit statistics. {e}");
             }
         }
     }

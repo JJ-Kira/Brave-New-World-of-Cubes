@@ -42,7 +42,7 @@ namespace Oculus.Interaction
         [FormerlySerializedAs("_snapPosesProvider")]
         [FormerlySerializedAs("_posesProvider")]
         [SerializeField, Optional, Interface(typeof(ISnapPoseDelegate))]
-        private UnityEngine.Object _snapPoseDelegate;
+        private MonoBehaviour _snapPoseDelegate;
         private ISnapPoseDelegate SnapPoseDelegate { get; set; }
 
         /// <summary>
@@ -50,8 +50,10 @@ namespace Oculus.Interaction
         /// A MovementProvider can be provided to supply custom movement logic.
         /// </summary>
         [SerializeField, Optional, Interface(typeof(IMovementProvider))]
-        private UnityEngine.Object _movementProvider;
+        private MonoBehaviour _movementProvider;
         private IMovementProvider MovementProvider { get; set; }
+
+        private bool _started;
 
         private static CollisionInteractionRegistry<SnapInteractor, SnapInteractable> _registry = null;
 
@@ -72,7 +74,7 @@ namespace Oculus.Interaction
         protected override void Start()
         {
             this.BeginStart(ref _started, () => base.Start());
-            this.AssertField(Rigidbody, nameof(Rigidbody));
+            Assert.IsNotNull(Rigidbody);
             if (_registry == null)
             {
                 _registry = new CollisionInteractionRegistry<SnapInteractor, SnapInteractable>();
@@ -169,13 +171,13 @@ namespace Oculus.Interaction
 
         public void InjectOptionalMovementProvider(IMovementProvider provider)
         {
-            _movementProvider = provider as UnityEngine.Object;
+            _movementProvider = provider as MonoBehaviour;
             MovementProvider = provider;
         }
 
         public void InjectOptionalSnapPoseDelegate(ISnapPoseDelegate snapPoseDelegate)
         {
-            _snapPoseDelegate = snapPoseDelegate as UnityEngine.Object;
+            _snapPoseDelegate = snapPoseDelegate as MonoBehaviour;
             SnapPoseDelegate = snapPoseDelegate;
         }
 

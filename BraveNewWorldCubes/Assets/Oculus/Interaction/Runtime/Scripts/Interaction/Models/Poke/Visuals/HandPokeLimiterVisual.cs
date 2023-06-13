@@ -19,7 +19,9 @@
  */
 
 using UnityEngine;
+using UnityEngine.Assertions;
 using Oculus.Interaction.Input;
+using UnityEngine.Serialization;
 
 namespace Oculus.Interaction
 {
@@ -31,7 +33,7 @@ namespace Oculus.Interaction
     public class HandPokeLimiterVisual : MonoBehaviour
     {
         [SerializeField, Interface(typeof(IHand))]
-        private UnityEngine.Object _hand;
+        private MonoBehaviour _hand;
         private IHand Hand;
 
         [SerializeField]
@@ -52,9 +54,9 @@ namespace Oculus.Interaction
         protected virtual void Start()
         {
             this.BeginStart(ref _started);
-            this.AssertField(Hand, nameof(Hand));
-            this.AssertField(_pokeInteractor, nameof(_pokeInteractor));
-            this.AssertField(_syntheticHand, nameof(_syntheticHand));
+            Assert.IsNotNull(Hand);
+            Assert.IsNotNull(_pokeInteractor);
+            Assert.IsNotNull(_syntheticHand);
             this.EndStart(ref _started);
         }
 
@@ -62,8 +64,8 @@ namespace Oculus.Interaction
         {
             if (_started)
             {
-                _pokeInteractor.WhenStateChanged += HandleStateChanged;
-                _pokeInteractor.WhenPassedSurfaceChanged += HandlePassedSurfaceChanged;
+                _pokeInteractor.WhenInteractableSelected.Action += HandleLock;
+                _pokeInteractor.WhenInteractableUnselected.Action += HandleUnlock;
             }
         }
 
@@ -73,33 +75,11 @@ namespace Oculus.Interaction
             {
                 if (_isTouching)
                 {
-                    UnlockWrist();
+                    HandleUnlock(_pokeInteractor.SelectedInteractable);
                 }
 
-                _pokeInteractor.WhenStateChanged -= HandleStateChanged;
-                _pokeInteractor.WhenPassedSurfaceChanged -= HandlePassedSurfaceChanged;
-            }
-        }
-
-        private void HandlePassedSurfaceChanged(bool passed)
-        {
-            CheckPassedSurface();
-        }
-
-        private void HandleStateChanged(InteractorStateChangeArgs args)
-        {
-            CheckPassedSurface();
-        }
-
-        private void CheckPassedSurface()
-        {
-            if (_pokeInteractor.IsPassedSurface)
-            {
-                LockWrist();
-            }
-            else
-            {
-                UnlockWrist();
+                _pokeInteractor.WhenInteractableSelected.Action -= HandleLock;
+                _pokeInteractor.WhenInteractableUnselected.Action -= HandleUnlock;
             }
         }
 
@@ -108,21 +88,12 @@ namespace Oculus.Interaction
             UpdateWrist();
         }
 
-        private void LockWrist()
+        private void HandleLock(PokeInteractable pokeInteractable)
         {
-            bool wasTouching = _isTouching;
-
             _isTouching = true;
-
-            if (!wasTouching && _isTouching)
-            {
-                // Activate native component
-                int result = NativeMethods.isdk_NativeComponent_Activate(0x506f6b654c696d74);
-                this.AssertIsTrue(result == NativeMethods.IsdkSuccess, "Unable to Activate native poke limit!");
-            }
         }
 
-        private void UnlockWrist()
+        private void HandleUnlock(PokeInteractable pokeInteractable)
         {
             _syntheticHand.FreeWrist();
             _isTouching = false;
@@ -138,9 +109,7 @@ namespace Oculus.Interaction
             }
 
             Vector3 positionDelta = rootPose.position - _pokeInteractor.Origin;
-            Vector3 targetPosePosition = _pokeInteractor.TouchPoint + positionDelta +
-                                         _pokeInteractor.Radius *
-                                         _pokeInteractor.TouchNormal;
+            Vector3 targetPosePosition = _pokeInteractor.TouchPoint + positionDelta;
             Pose wristPoseOverride = new Pose(targetPosePosition, rootPose.rotation);
 
             _syntheticHand.LockWristPose(wristPoseOverride, 1.0f, SyntheticHand.WristLockMode.Full, true, true);
@@ -159,7 +128,7 @@ namespace Oculus.Interaction
 
         public void InjectHand(IHand hand)
         {
-            _hand = hand as UnityEngine.Object;
+            _hand = hand as MonoBehaviour;
             Hand = hand;
         }
 

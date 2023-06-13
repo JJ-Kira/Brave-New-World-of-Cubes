@@ -19,110 +19,38 @@
  */
 
 using System;
+using System.Linq;
 using System.Collections.Generic;
-using UnityEditor;
 using UnityEngine;
 using UnityEngine.Assertions;
+using UnityEditor;
 
 namespace Oculus.Interaction.Editor
 {
     /// <summary>
     /// A utility class for building custom editors with less work required.
     /// </summary>
-    public class EditorBase
+    public class EditorBase : UnityEditor.Editor
     {
-        private SerializedObject _serializedObject;
-
-        private HashSet<string> _hiddenProperties = new HashSet<string>();
-        private HashSet<string> _skipProperties = new HashSet<string>();
-
-        private Dictionary<string, Action<SerializedProperty>> _customDrawers =
-            new Dictionary<string, Action<SerializedProperty>>();
-
-        private Dictionary<string, Section> _sections =
-            new Dictionary<string, Section>();
-        private List<string> _orderedSections = new List<string>();
-
-        public class Section
-        {
-            public string title;
-            public bool isFoldout;
-            public bool foldout;
-            public List<string> properties = new List<string>();
-
-            public bool HasSomethingToDraw()
-            {
-                return properties != null && properties.Count > 0;
-            }
-        }
-
-        public EditorBase(SerializedObject serializedObject)
-        {
-            _serializedObject = serializedObject;
-        }
-
-        #region Sections
-        private Section GetOrCreateSection(string sectionName)
-        {
-            if (_sections.TryGetValue(sectionName, out Section existingSection))
-            {
-                return existingSection;
-            }
-
-            Section section = CreateSection(sectionName, false);
-            return section;
-        }
-
-        public Section CreateSection(string sectionName, bool isFoldout)
-        {
-            if (_sections.TryGetValue(sectionName, out Section existingSection))
-            {
-                Debug.LogError($"Section {sectionName} already exists");
-                return null;
-            }
-
-            Section section = new Section() { title = sectionName, isFoldout = isFoldout };
-            _sections.Add(sectionName, section);
-            _orderedSections.Add(sectionName);
-            return section;
-        }
-
-        public void CreateSections(Dictionary<string, string[]> sections, bool isFoldout)
-        {
-            foreach (var sectionData in sections)
-            {
-                CreateSection(sectionData.Key, isFoldout);
-                AddToSection(sectionData.Key, sectionData.Value);
-            }
-        }
-
-        public void AddToSection(string sectionName, params string[] properties)
-        {
-            if (properties.Length == 0
-                || !ValidateProperties(properties))
-            {
-                return;
-            }
-
-            Section section = GetOrCreateSection(sectionName);
-            foreach (var property in properties)
-            {
-                section.properties.Add(property);
-                _skipProperties.Add(property);
-            }
-        }
-
-        #endregion
 
         #region API
 
+        protected virtual void OnEnable() { }
+
+        protected virtual void OnDisable() { }
+
         /// <summary>
-        /// Call in OnEnable with one or more property names to hide them from the inspector.
+        /// You must put all of the editor specifications into OnInit
+        /// </summary>
+        protected virtual void OnInit() { }
+
+        /// <summary>
+        /// Call in OnInit with one or more property names to hide them from the inspector.
         ///
         /// This is preferable to using [HideInInspector] because it still allows the property to
         /// be viewed when using the Inspector debug mode.
         /// </summary>
-        public void Hide(params string[] properties)
+        protected void Hide(params string[] properties)
         {
             Assert.IsTrue(properties.Length > 0, "Should always hide at least one property.");
             if (!ValidateProperties(properties))
@@ -134,10 +62,57 @@ namespace Oculus.Interaction.Editor
         }
 
         /// <summary>
+        /// Call in OnInit with one or more property names to defer drawing them until after all
+        /// non-deferred properties have been drawn.  All deferred properties will be drawn in the order
+        /// they are passed in to calls to Defer.
+        /// </summary>
+        protected void Defer(params string[] properties)
+        {
+            Assert.IsTrue(properties.Length > 0, "Should always defer at least one property.");
+            if (!ValidateProperties(properties))
+            {
+                return;
+            }
+
+            foreach (var property in properties)
+            {
+                if (_deferredProperties.Contains(property))
+                {
+                    continue;
+                }
+
+                _deferredProperties.Add(property);
+                _deferredActions.Add(() =>
+                {
+                    DrawProperty(serializedObject.FindProperty(property));
+                });
+            }
+        }
+
+        /// <summary>
+        /// Call in OnInit with a single property name and a custom property drawer.  Equivalent
+        /// to calling Draw and then Defer for the property.
+        /// </summary>
+        protected void Defer(string property, Action<SerializedProperty> customDrawer)
+        {
+            Draw(property, customDrawer);
+            Defer(property);
+        }
+
+        /// <summary>
+        /// Call in OnInit with a single delegate to have it be called after all other non-deferred
+        /// properties have been drawn.
+        /// </summary>
+        protected void Defer(Action deferredAction)
+        {
+            _deferredActions.Add(deferredAction);
+        }
+
+        /// <summary>
         /// Call in OnInit to specify a custom drawer for a single property.  Whenever the property is drawn,
         /// it will use the provided property drawer instead of the default one.
         /// </summary>
-        public void Draw(string property, Action<SerializedProperty> drawer)
+        protected void Draw(string property, Action<SerializedProperty> drawer)
         {
             if (!ValidateProperties(property))
             {
@@ -152,7 +127,7 @@ namespace Oculus.Interaction.Editor
         /// lumped in with the primary property.  The extra property is not drawn normally, and is instead grouped in
         /// with the primary property.  Can be used in situations where a collection of properties need to be drawn together.
         /// </summary>
-        public void Draw(string property,
+        protected void Draw(string property,
             string withExtra0,
             Action<SerializedProperty, SerializedProperty> drawer)
         {
@@ -165,11 +140,11 @@ namespace Oculus.Interaction.Editor
             Draw(property, p =>
             {
                 drawer(p,
-                    _serializedObject.FindProperty(withExtra0));
+                    serializedObject.FindProperty(withExtra0));
             });
         }
 
-        public void Draw(string property,
+        protected void Draw(string property,
             string withExtra0,
             string withExtra1,
             Action<SerializedProperty, SerializedProperty, SerializedProperty> drawer)
@@ -184,12 +159,12 @@ namespace Oculus.Interaction.Editor
             Draw(property, p =>
             {
                 drawer(p,
-                    _serializedObject.FindProperty(withExtra0),
-                    _serializedObject.FindProperty(withExtra1));
+                    serializedObject.FindProperty(withExtra0),
+                    serializedObject.FindProperty(withExtra1));
             });
         }
 
-        public void Draw(string property,
+        protected void Draw(string property,
             string withExtra0,
             string withExtra1,
             string withExtra2,
@@ -207,13 +182,13 @@ namespace Oculus.Interaction.Editor
             Draw(property, p =>
             {
                 drawer(p,
-                    _serializedObject.FindProperty(withExtra0),
-                    _serializedObject.FindProperty(withExtra1),
-                    _serializedObject.FindProperty(withExtra2));
+                    serializedObject.FindProperty(withExtra0),
+                    serializedObject.FindProperty(withExtra1),
+                    serializedObject.FindProperty(withExtra2));
             });
         }
 
-        public void Draw(string property,
+        protected void Draw(string property,
             string withExtra0,
             string withExtra1,
             string withExtra2,
@@ -233,58 +208,218 @@ namespace Oculus.Interaction.Editor
             Draw(property, p =>
             {
                 drawer(p,
-                    _serializedObject.FindProperty(withExtra0),
-                    _serializedObject.FindProperty(withExtra1),
-                    _serializedObject.FindProperty(withExtra2),
-                    _serializedObject.FindProperty(withExtra3));
+                    serializedObject.FindProperty(withExtra0),
+                    serializedObject.FindProperty(withExtra1),
+                    serializedObject.FindProperty(withExtra2),
+                    serializedObject.FindProperty(withExtra3));
             });
         }
+
+        protected void Conditional(string boolPropName, bool showIf, params string[] toHide)
+        {
+            if (!ValidateProperties(boolPropName) || !ValidateProperties(toHide))
+            {
+                return;
+            }
+
+            var boolProp = serializedObject.FindProperty(boolPropName);
+            if (boolProp.propertyType != SerializedPropertyType.Boolean)
+            {
+                Debug.LogError(
+                    $"Must provide a Boolean property to this Conditional method, but the property {boolPropName} had a type of {boolProp.propertyType}");
+                return;
+            }
+
+            List<Func<bool>> conditions;
+            foreach (var prop in toHide)
+            {
+                if (!_propertyDrawConditions.TryGetValue(prop, out conditions))
+                {
+                    conditions = new List<Func<bool>>();
+                    _propertyDrawConditions[prop] = conditions;
+                }
+
+                conditions.Add(() =>
+                {
+                    if (boolProp.hasMultipleDifferentValues)
+                    {
+                        return false;
+                    }
+                    else
+                    {
+                        return boolProp.boolValue == showIf;
+                    }
+                });
+            }
+        }
+
+        protected void Conditional<T>(string enumPropName, T showIf, params string[] toHide)
+            where T : Enum
+        {
+            if (!ValidateProperties(enumPropName) || !ValidateProperties(toHide))
+            {
+                return;
+            }
+
+            var enumProp = serializedObject.FindProperty(enumPropName);
+            if (enumProp.propertyType != SerializedPropertyType.Enum)
+            {
+                Debug.LogError(
+                    $"Must provide a Boolean property to this Conditional method, but the property {enumPropName} had a type of {enumProp.propertyType}");
+                return;
+            }
+
+            List<Func<bool>> conditions;
+            foreach (var prop in toHide)
+            {
+                if (!_propertyDrawConditions.TryGetValue(prop, out conditions))
+                {
+                    conditions = new List<Func<bool>>();
+                    _propertyDrawConditions[prop] = conditions;
+                }
+
+                conditions.Add(() =>
+                {
+                    if (enumProp.hasMultipleDifferentValues)
+                    {
+                        return false;
+                    }
+                    else
+                    {
+                        return enumProp.intValue == showIf.GetHashCode();
+                    }
+                });
+            }
+        }
+
+        /// <summary>
+        /// Call in OnInit to specify a custom decorator for a single property.  Before a property is drawn,
+        /// all of the decorators will be drawn first.
+        /// </summary>
+        protected void Decorate(string property, Action<SerializedProperty> decorator)
+        {
+            if (!ValidateProperties(property))
+            {
+                return;
+            }
+
+            List<Action<SerializedProperty>> decorators;
+            if (!_customDecorators.TryGetValue(property, out decorators))
+            {
+                decorators = new List<Action<SerializedProperty>>();
+                _customDecorators[property] = decorators;
+            }
+
+            decorators.Add(decorator);
+        }
+
+        /// <summary>
+        /// Call in OnInit to specify a custom grouping behaviour for a range of properties.  Specify the first
+        /// and last property (inclusive) and the action to take BEFORE the first property is drawn, and the action
+        /// to take AFTER the last property is drawn.
+        /// </summary>
+        protected void Group(string firstProperty, string lastProperty, Action beginGroup,
+            Action endGroup)
+        {
+            if (!ValidateProperties(firstProperty) || !ValidateProperties(lastProperty))
+            {
+                return;
+            }
+
+            _groupBegins.Add(firstProperty, beginGroup);
+            _groupEnds.Add(lastProperty, endGroup);
+        }
+
+        /// <summary>
+        /// A utility version of the more generic Group method.
+        /// Call in OnInit to specify a range of properties that should be grouped within a styled vertical
+        /// layout group.
+        /// </summary>
+        protected void Group(string firstProperty, string lastProperty, GUIStyle style)
+        {
+            if (style == null)
+            {
+                Debug.LogError(
+                    "Cannot provide a null style to EditorBase.Group.  If you are acquiring a " +
+                    "Style from the EditorStyles class, try calling Group from with on OnInit instead " +
+                    "of from within OnEnable.");
+                return;
+            }
+
+            Group(firstProperty,
+                lastProperty,
+                () => EditorGUILayout.BeginVertical(style),
+                () => EditorGUILayout.EndVertical());
+        }
+
+        /// <summary>
+        /// Groups the given properties into a foldout with a given name.
+        /// </summary>
+        protected void Foldout(string firstProperty, string lastProperty, string foldoutName,
+            bool showByDefault = false)
+        {
+            Group(firstProperty,
+                lastProperty,
+                () =>
+                {
+                    bool shouldShow;
+                    if (!_foldouts.TryGetValue(foldoutName, out shouldShow))
+                    {
+                        shouldShow = showByDefault;
+                    }
+
+                    shouldShow = EditorGUILayout.Foldout(shouldShow, foldoutName);
+
+                    _foldouts[foldoutName] = shouldShow;
+                    EditorGUI.indentLevel++;
+
+                    _currentStates.Push(shouldShow);
+                },
+                () =>
+                {
+                    EditorGUI.indentLevel--;
+                    _currentStates.Pop();
+                });
+        }
+
+        protected virtual void OnBeforeInspector() { }
+        protected virtual void OnAfterInspector(bool anyPropertiesModified) { }
 
         #endregion
 
         #region IMPLEMENTATION
 
-        /// <summary>
-        /// Indicates if the property in the serializedObject
-        /// has been assigned to a section
-        /// </summary>
-        /// <param name="property">The name of the property in the serialized object</param>
-        /// <returns>True if the property has been added to a section</returns>
-        public bool IsInSection(string property)
-        {
-            return _skipProperties.Contains(property);
-        }
+        [NonSerialized]
+        private bool _hasInitBeenCalled = false;
 
-        /// <summary>
-        /// Indicates if the property in the serializedObject
-        /// needs to be hidden.
-        /// Hidden properties are typically drawn in a custom way
-        /// so they don't need to be drawn with the default methods.
-        /// </summary>
-        /// <param name="property">The name of the property in the serialized object</param>
-        /// <returns>True if the property has been hidden</returns>
-        public bool IsHidden(string property)
-        {
-            return _hiddenProperties.Contains(property);
-        }
+        private HashSet<string> _hiddenProperties = new HashSet<string>();
+        private HashSet<string> _deferredProperties = new HashSet<string>();
+        private List<Action> _deferredActions = new List<Action>();
 
-        /// <summary>
-        /// Draws all the visible (non hidden)properties in the serialized
-        /// object following this order:
-        /// First all properties that has not been added to sections,
-        /// in the order they appear in the Component.
-        /// Then all the sections (indented and in foldouts) in the order
-        /// they were created, with the internal properties ordered in the
-        /// order the properties were added to the section.
-        ///
-        /// If a special property drawer was specified it will use it when
-        /// drawing said property.
-        ///
-        /// If a property was hidden, it will not present it in any section.
-        /// </summary>
-        public void DrawFullInspector()
+        private Dictionary<string, bool> _foldouts = new Dictionary<string, bool>();
+        private Stack<bool> _currentStates = new Stack<bool>();
+
+        private Dictionary<string, Action<SerializedProperty>> _customDrawers =
+            new Dictionary<string, Action<SerializedProperty>>();
+
+        private Dictionary<string, List<Action<SerializedProperty>>> _customDecorators =
+            new Dictionary<string, List<Action<SerializedProperty>>>();
+
+        private Dictionary<string, Action> _groupBegins = new Dictionary<string, Action>();
+        private Dictionary<string, Action> _groupEnds = new Dictionary<string, Action>();
+
+        private Dictionary<string, List<Func<bool>>> _propertyDrawConditions =
+            new Dictionary<string, List<Func<bool>>>();
+
+        public override void OnInspectorGUI()
         {
-            SerializedProperty it = _serializedObject.GetIterator();
+            if (!_hasInitBeenCalled)
+            {
+                OnInit();
+                _hasInitBeenCalled = true;
+            }
+
+            SerializedProperty it = serializedObject.GetIterator();
             it.NextVisible(enterChildren: true);
 
             //Draw script header
@@ -292,12 +427,14 @@ namespace Oculus.Interaction.Editor
             EditorGUILayout.PropertyField(it);
             EditorGUI.EndDisabledGroup();
 
+            OnBeforeInspector();
+
             EditorGUI.BeginChangeCheck();
 
             while (it.NextVisible(enterChildren: false))
             {
-                //Don't draw skip properties in this pass, we will draw them after everything else
-                if (IsInSection(it.name))
+                //Don't draw deferred properties in this pass, we will draw them after everything else
+                if (_deferredProperties.Contains(it.name))
                 {
                     continue;
                 }
@@ -305,61 +442,60 @@ namespace Oculus.Interaction.Editor
                 DrawProperty(it);
             }
 
-            foreach (string sectionKey in _orderedSections)
+            foreach (var deferredAction in _deferredActions)
             {
-                DrawSection(sectionKey);
+                deferredAction();
             }
 
-            _serializedObject.ApplyModifiedProperties();
-        }
+            bool anyModified = EditorGUI.EndChangeCheck();
 
-        /// <summary>
-        /// Draws all the properties in the section in the order
-        /// they were added.
-        /// </summary>
-        /// <param name="sectionName">The name of the section</param>
-        public void DrawSection(string sectionName)
-        {
-            Section section = _sections[sectionName];
-            DrawSection(section);
-        }
+            OnAfterInspector(anyModified);
 
-        private void DrawSection(Section section)
-        {
-            if (!section.HasSomethingToDraw())
-            {
-                return;
-            }
-
-            if (section.isFoldout)
-            {
-                section.foldout = EditorGUILayout.Foldout(section.foldout, section.title);
-                if (!section.foldout)
-                {
-                    return;
-                }
-                EditorGUI.indentLevel++;
-            }
-
-            foreach (string prop in section.properties)
-            {
-                DrawProperty(_serializedObject.FindProperty(prop));
-            }
-
-            if (section.isFoldout)
-            {
-                EditorGUI.indentLevel--;
-            }
+            serializedObject.ApplyModifiedProperties();
         }
 
         private void DrawProperty(SerializedProperty property)
         {
+            Action groupBeginAction;
+            if (_groupBegins.TryGetValue(property.name, out groupBeginAction))
+            {
+                groupBeginAction();
+            }
+
             try
             {
-                //Don't draw hidden properties
-                if (IsHidden(property.name))
+                //Don't draw if we are in a property that is currently hidden by a foldout
+                if (_currentStates.Any(s => s == false))
                 {
                     return;
+                }
+
+                //Don't draw hidden properties
+                if (_hiddenProperties.Contains(property.name))
+                {
+                    return;
+                }
+
+                List<Func<bool>> conditions;
+                if (_propertyDrawConditions.TryGetValue(property.name, out conditions))
+                {
+                    foreach (var condition in conditions)
+                    {
+                        if (!condition())
+                        {
+                            return;
+                        }
+                    }
+                }
+
+                //First draw all decorators for the property
+                List<Action<SerializedProperty>> decorators;
+                if (_customDecorators.TryGetValue(property.name, out decorators))
+                {
+                    foreach (var decorator in decorators)
+                    {
+                        decorator(property);
+                    }
                 }
 
                 //Then draw the property itself, using a custom drawer if needed
@@ -372,10 +508,15 @@ namespace Oculus.Interaction.Editor
                 {
                     EditorGUILayout.PropertyField(property, includeChildren: true);
                 }
+
             }
-            catch (Exception e)
+            finally
             {
-                Debug.LogError($"Error drawing property {e.Message}");
+                Action groupEndAction;
+                if (_groupEnds.TryGetValue(property.name, out groupEndAction))
+                {
+                    groupEndAction();
+                }
             }
         }
 
@@ -383,7 +524,7 @@ namespace Oculus.Interaction.Editor
         {
             foreach (var property in properties)
             {
-                if (_serializedObject.FindProperty(property) == null)
+                if (serializedObject.FindProperty(property) == null)
                 {
                     Debug.LogWarning(
                         $"Could not find property {property}, maybe it was deleted or renamed?");

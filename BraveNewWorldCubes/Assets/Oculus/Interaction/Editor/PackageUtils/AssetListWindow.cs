@@ -33,21 +33,13 @@ namespace Oculus.Interaction.Editor
         {
             public readonly string AssetPath;
             public readonly string DisplayName;
-            public readonly Action ClickAction;
 
             public AssetInfo(string assetPath) : this(assetPath, assetPath) { }
-
-            public AssetInfo(string assetPath, string displayName, Action clickAction) :
-                this(assetPath, displayName)
-            {
-                ClickAction = clickAction;
-            }
 
             public AssetInfo(string assetPath, string displayName)
             {
                 AssetPath = assetPath;
                 DisplayName = displayName;
-                ClickAction = () => PingObject(assetPath);
             }
         }
 
@@ -56,8 +48,6 @@ namespace Oculus.Interaction.Editor
 
         private Action<AssetListWindow> _headerDrawer;
         private Action<AssetListWindow> _footerDrawer;
-
-        public IReadOnlyList<AssetInfo> AssetInfos => _assetInfos;
 
         public static AssetListWindow Show(
             string title,
@@ -163,7 +153,7 @@ namespace Oculus.Interaction.Editor
                 var rect = EditorGUILayout.BeginHorizontal();
                 if (GUI.Button(rect, "", GUIStyle.none))
                 {
-                    assetInfo.ClickAction.Invoke();
+                    PingObject(assetInfo.AssetPath);
                 }
                 GUIStyle style = new GUIStyle(GUI.skin.label);
                 style.richText = true;
@@ -175,7 +165,7 @@ namespace Oculus.Interaction.Editor
             EditorGUILayout.EndVertical();
         }
 
-        private static void PingObject(string assetPath)
+        private void PingObject(string assetPath)
         {
             Object obj = AssetDatabase.LoadAssetAtPath(
                 assetPath, typeof(Object));

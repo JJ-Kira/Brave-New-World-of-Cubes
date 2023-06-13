@@ -19,8 +19,3 @@
  */
 
 // Moved to /Scripts/Editor. This stub only exists to overwrite previous instances of OVRProfiler.
-//
-
-namespace Oculus.Deprecated
-{
-}

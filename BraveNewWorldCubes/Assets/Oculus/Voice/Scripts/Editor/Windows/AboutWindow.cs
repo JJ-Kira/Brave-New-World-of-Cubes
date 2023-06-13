@@ -18,23 +18,25 @@
  * limitations under the License.
  */
 
-using Meta.Voice.VSDKHub;
-using Meta.Voice.Hub.Attributes;
-using Meta.Voice.Hub.Interfaces;
-using Meta.WitAi;
+using Facebook.WitAi;
+using Facebook.WitAi.Windows;
 using Oculus.Voice.Utility;
 using UnityEngine;
 
-namespace Meta.Voice
+namespace Oculus.Voice.Windows
 {
-    [MetaHubPage("About", VoiceHubConstants.CONTEXT_VOICE,  priority: 1000)]
-    public class AboutWindow : IMetaHubPage
+    public class AboutWindow : WitScriptableWizard
     {
-        public void OnGUI()
+        protected override Texture2D HeaderIcon => VoiceSDKStyles.MainHeader;
+        protected override GUIContent Title => VoiceSDKStyles.AboutTitle;
+        protected override string ButtonLabel => VoiceSDKStyles.Texts.AboutCloseLabel;
+        protected override string ContentSubheaderLabel => string.Empty;
+
+        protected override void LayoutFields()
         {
             WitEditorUI.LayoutKeyLabel(VoiceSDKStyles.Texts.AboutVoiceSdkVersionLabel, VoiceSDKVersion.VERSION);
-            WitEditorUI.LayoutKeyLabel(VoiceSDKStyles.Texts.AboutWitSdkVersionLabel, WitConstants.SDK_VERSION);
-            WitEditorUI.LayoutKeyLabel(VoiceSDKStyles.Texts.AboutWitApiVersionLabel, WitConstants.API_VERSION);
+            WitEditorUI.LayoutKeyLabel(VoiceSDKStyles.Texts.AboutWitSdkVersionLabel, WitRequest.WIT_SDK_VERSION);
+            WitEditorUI.LayoutKeyLabel(VoiceSDKStyles.Texts.AboutWitApiVersionLabel, WitRequest.WIT_API_VERSION);
 
             GUILayout.Space(16);
 

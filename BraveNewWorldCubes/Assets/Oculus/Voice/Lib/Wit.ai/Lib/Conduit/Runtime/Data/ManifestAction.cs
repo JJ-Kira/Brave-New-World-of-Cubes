@@ -8,14 +8,13 @@
 
 using System.Collections.Generic;
 using System.Linq;
-using Meta.WitAi.Json;
 
 namespace Meta.Conduit
 {
     /// <summary>
     /// An action entry in the manifest.
     /// </summary>
-    internal class ManifestAction: IManifestMethod
+    internal class ManifestAction
     {
         /// <summary>
         /// Called via JSON reflection, need preserver or it will be stripped on compile
@@ -37,7 +36,7 @@ namespace Meta.Conduit
         /// The name of the action as exposed to the backend.
         /// </summary>
         public string Name { get; set; }
-        
+
         /// <summary>
         /// The parameters used by the action.
         /// </summary>
@@ -46,7 +45,6 @@ namespace Meta.Conduit
         /// <summary>
         /// Returns the fully qualified name of the declaring type of the action.
         /// </summary>
-        [JsonIgnore]
         public string DeclaringTypeName => ID.Substring(0, ID.LastIndexOf('.'));
 
         /// <summary>

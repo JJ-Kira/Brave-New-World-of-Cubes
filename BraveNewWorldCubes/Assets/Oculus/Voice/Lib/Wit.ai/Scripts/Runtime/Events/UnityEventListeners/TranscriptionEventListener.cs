@@ -1,7 +1,7 @@
-using Meta.WitAi.Interfaces;
+using Facebook.WitAi.Interfaces;
 using UnityEngine;
 
-namespace Meta.WitAi.Events.UnityEventListeners
+namespace Facebook.WitAi.Events.UnityEventListeners
 {
     [RequireComponent(typeof(ITranscriptionEventProvider))]
     public class TranscriptionEventListener : MonoBehaviour, ITranscriptionEvent

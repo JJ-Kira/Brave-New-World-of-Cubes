@@ -6,13 +6,11 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-using Meta.WitAi.Attributes;
-using Meta.WitAi.Json;
-using Meta.WitAi.Utilities;
+using Facebook.WitAi.Lib;
 using UnityEngine;
-using Utilities;
+using UnityEngine.Events;
 
-namespace Meta.WitAi.CallbackHandlers
+namespace Facebook.WitAi.CallbackHandlers
 {
     /// <summary>
     /// Triggers an event when no intents were recognized in an utterance.
@@ -20,26 +18,16 @@ namespace Meta.WitAi.CallbackHandlers
     [AddComponentMenu("Wit.ai/Response Matchers/Out Of Domain")]
     public class OutOfScopeUtteranceHandler : WitResponseHandler
     {
-        [Space(WitRuntimeStyles.HeaderPaddingTop)]
-        [TooltipBox("Triggered when a activation on the associated AppVoiceExperience does not return any intents.")]
-        [SerializeField] private StringEvent onOutOfDomain = new StringEvent();
+        [SerializeField] private UnityEvent onOutOfDomain = new UnityEvent();
 
-        protected override string OnValidateResponse(WitResponseNode response, bool isEarlyResponse)
+        protected override void OnHandleResponse(WitResponseNode response)
         {
-            if (response == null)
+            if (null == response) return;
+
+            if (response["intents"].Count == 0)
             {
-                return "Response is null";
+                onOutOfDomain?.Invoke();
             }
-            if (response["intents"].Count > 0)
-            {
-                return "Intents found";
-            }
-            return string.Empty;
-        }
-        protected override void OnResponseInvalid(WitResponseNode response, string error) {}
-        protected override void OnResponseSuccess(WitResponseNode response)
-        {
-            onOutOfDomain?.Invoke(response.GetTranscription());
         }
     }
 }

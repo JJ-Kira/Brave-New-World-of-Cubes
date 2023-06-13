@@ -19,7 +19,11 @@
  */
 
 using Oculus.Interaction.Input;
+using System;
+using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using UnityEngine;
+using UnityEngine.Assertions;
 
 namespace Oculus.Interaction.GrabAPI
 {
@@ -31,38 +35,26 @@ namespace Oculus.Interaction.GrabAPI
     public class HandGrabAPI : MonoBehaviour
     {
         [SerializeField, Interface(typeof(IHand))]
-        private UnityEngine.Object _hand;
+        private MonoBehaviour _hand;
 
         public IHand Hand { get; private set; }
 
-        [SerializeField, Interface(typeof(IHmd)), Optional]
-        private UnityEngine.Object _hmd;
+        private IFingerAPI _fingerPinchGrabAPI = new FingerPinchGrabAPI();
+        private IFingerAPI _fingerPalmGrabAPI = new FingerPalmGrabAPI();
 
-        public IHmd Hmd { get; private set; } = null;
-
-        private IFingerAPI _fingerPinchGrabAPI = null;
-        private IFingerAPI _fingerPalmGrabAPI = null;
-
-        private bool _started = false;
+        private bool _started;
 
         protected virtual void Awake()
         {
             Hand = _hand as IHand;
-            Hmd = _hmd as IHmd;
         }
 
         protected virtual void Start()
         {
             this.BeginStart(ref _started);
-            this.AssertField(Hand, nameof(Hand));
-            if (_fingerPinchGrabAPI == null)
-            {
-                _fingerPinchGrabAPI = new FingerPinchGrabAPI(Hmd);
-            }
-            if (_fingerPalmGrabAPI == null)
-            {
-                _fingerPalmGrabAPI = new FingerPalmGrabAPI();
-            }
+            Assert.IsNotNull(Hand);
+            Assert.IsNotNull(_fingerPinchGrabAPI);
+            Assert.IsNotNull(_fingerPalmGrabAPI);
             this.EndStart(ref _started);
         }
 
@@ -268,24 +260,22 @@ namespace Oculus.Interaction.GrabAPI
 
         public Vector3 GetPinchCenter()
         {
-            Vector3 localOffset = _fingerPinchGrabAPI.GetWristOffsetLocal();
-            return WristOffsetToWorldPoint(localOffset);
+            return WristOffsetToWorldPoint(_fingerPinchGrabAPI.GetCenterOffset());
         }
 
         public Vector3 GetPalmCenter()
         {
-            Vector3 localOffset = _fingerPalmGrabAPI.GetWristOffsetLocal();
-            return WristOffsetToWorldPoint(localOffset);
+            return WristOffsetToWorldPoint(_fingerPalmGrabAPI.GetCenterOffset());
         }
 
-        private Vector3 WristOffsetToWorldPoint(Vector3 localOffset)
+        private Vector3 WristOffsetToWorldPoint(Vector3 offset)
         {
             if (!Hand.GetJointPose(HandJointId.HandWristRoot, out Pose wristPose))
             {
-                return localOffset * Hand.Scale;
+                return offset;
             }
 
-            return wristPose.position + wristPose.rotation * localOffset * Hand.Scale;
+            return wristPose.position + wristPose.rotation * offset;
         }
 
         public float GetHandPinchScore(in GrabbingRule fingers,
@@ -315,7 +305,6 @@ namespace Oculus.Interaction.GrabAPI
         {
             float requiredMin = 1.0f;
             float optionalMax = 0f;
-            bool anyRequired = false;
             bool usesOptionals = fingers.SelectsWithOptionals;
             for (int i = 0; i < Constants.NUM_FINGERS; i++)
             {
@@ -336,37 +325,11 @@ namespace Oculus.Interaction.GrabAPI
                 }
                 else if (fingers[finger] == FingerRequirement.Required)
                 {
-                    anyRequired = true;
                     requiredMin = Mathf.Min(requiredMin, fingerAPI.GetFingerGrabScore(finger));
                 }
             }
 
-            return usesOptionals ? optionalMax : anyRequired ? requiredMin : 0f;
-        }
-
-        public void SetPinchGrabParam(PinchGrabParam paramId, float paramVal)
-        {
-            FingerPinchGrabAPI pinchGrab = _fingerPinchGrabAPI as FingerPinchGrabAPI;
-            if (pinchGrab != null)
-            {
-                pinchGrab.SetPinchGrabParam(paramId, paramVal);
-            }
-        }
-
-        public float GetPinchGrabParam(PinchGrabParam paramId)
-        {
-            FingerPinchGrabAPI pinchGrab = _fingerPinchGrabAPI as FingerPinchGrabAPI;
-            if (pinchGrab != null)
-            {
-                return pinchGrab.GetPinchGrabParam(paramId);
-            }
-
-            return 0;
-        }
-
-        public bool GetFingerIsGrabbing(HandFinger finger)
-        {
-            return _fingerPinchGrabAPI.GetFingerIsGrabbing(finger);
+            return usesOptionals ? optionalMax : requiredMin;
         }
 
         #region Inject
@@ -378,14 +341,8 @@ namespace Oculus.Interaction.GrabAPI
 
         public void InjectHand(IHand hand)
         {
-            _hand = hand as UnityEngine.Object;
+            _hand = hand as MonoBehaviour;
             Hand = hand;
-        }
-
-        public void InjectOptionalHmd(IHmd hmd)
-        {
-            Hmd = hmd;
-            _hmd = hmd as UnityEngine.Object;
         }
 
         public void InjectOptionalFingerPinchAPI(IFingerAPI fingerPinchAPI)

@@ -10,9 +10,7 @@ namespace Oculus.Platform.Models
 
   public class NetSyncVoipAttenuationValue
   {
-    /// decibel fall-off value
     public readonly float Decibels;
-    /// The starting distance of this attenuation value
     public readonly float Distance;
 
 

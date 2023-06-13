@@ -11,14 +11,14 @@ using System;
 using System.IO;
 using UnityEngine;
 
-namespace Meta.WitAi.Utilities
+namespace Facebook.WitAi.Utilities
 {
     public static class IOUtility
     {
         // Log error
         private static void LogError(string error)
         {
-            VLog.E($"IO Utility - {error}");
+            Debug.LogError($"IO Utility - {error}");
         }
 
         /// <summary>

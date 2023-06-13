@@ -7,11 +7,11 @@
  */
 
 using System.Collections.Generic;
-using Meta.WitAi.Data;
+using Facebook.WitAi.Data;
 using UnityEditor;
 using UnityEngine;
 
-namespace Meta.WitAi.CallbackHandlers
+namespace Facebook.WitAi.CallbackHandlers
 {
     public class ValuePathMatcherPropertyDrawer : PropertyDrawer
     {

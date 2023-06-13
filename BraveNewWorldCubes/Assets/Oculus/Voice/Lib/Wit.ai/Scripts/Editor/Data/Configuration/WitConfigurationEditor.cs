@@ -7,26 +7,20 @@
  */
 
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using Meta.WitAi.Data.Configuration.Tabs;
-using Lib.Wit.Runtime.Requests;
+using System.Runtime.Remoting.Messaging;
 using Meta.Conduit.Editor;
-using Meta.WitAi.Configuration;
-using Meta.WitAi.Data.Configuration;
-using Meta.WitAi.Utilities;
-using Meta.Conduit;
-using Meta.WitAi.Lib;
+using Facebook.WitAi.Configuration;
+using Facebook.WitAi.Data.Configuration;
+using Facebook.WitAi.Utilities;
 using UnityEditor;
 using UnityEngine;
-using Meta.WitAi.Windows.Conponents;
 
-namespace Meta.WitAi.Windows
+namespace Facebook.WitAi.Windows
 {
-    public class WitConfigurationEditor : UnityEditor.Editor
+    public class WitConfigurationEditor : Editor
     {
-        public WitConfiguration Configuration { get; private set; }
+        public WitConfiguration configuration { get; private set; }
         private string _serverToken;
         private string _appName;
         private string _appID;
@@ -34,29 +28,18 @@ namespace Meta.WitAi.Windows
         public bool drawHeader = true;
         private bool _foldout = true;
         private int _requestTab = 0;
-        private bool _manifestAvailable = false;
-        private bool _syncInProgress = false;
-        private bool _didCheckAutoTrainAvailability = false;
-        private bool _isAutoTrainAvailable = false;
+        private bool manifestAvailable = false;
 
-        /// <summary>
-        /// Whether or not server specific functionality like sync
-        /// should be disabled for this configuration
-        /// </summary>
-        protected virtual bool _disableServerPost => false;
-
-        internal static readonly AssemblyWalker AssemblyWalker = new AssemblyWalker();
         private static ConduitStatistics _statistics;
         private static readonly AssemblyMiner AssemblyMiner = new AssemblyMiner(new WitParameterValidator());
-        private static readonly ManifestGenerator ManifestGenerator = new ManifestGenerator(AssemblyWalker, AssemblyMiner);
-        private static readonly ManifestLoader ManifestLoader = new ManifestLoader();
-        private static readonly IWitVRequestFactory VRequestFactory = new WitVRequestFactory();
+        private static readonly ManifestGenerator ManifestGenerator = new ManifestGenerator(new AssemblyWalker(), AssemblyMiner);
 
-        private EnumSynchronizer _enumSynchronizer;
-
-        private WitConfigurationEditorTab[] _tabs;
-
-        private const string ENTITY_SYNC_CONSENT_KEY = "Conduit.EntitySync.Consent";
+        // Tab IDs
+        protected const string TAB_APPLICATION_ID = "application";
+        protected const string TAB_INTENTS_ID = "intents";
+        protected const string TAB_ENTITIES_ID = "entities";
+        protected const string TAB_TRAITS_ID = "traits";
+        private string[] _tabIds = new string[] { TAB_APPLICATION_ID, TAB_INTENTS_ID, TAB_ENTITIES_ID, TAB_TRAITS_ID };
 
         // Generate
         private static ConduitStatistics Statistics
@@ -71,32 +54,24 @@ namespace Meta.WitAi.Windows
             }
         }
 
-        protected virtual Texture2D HeaderIcon => WitTexts.HeaderIcon;
-        public virtual string HeaderUrl => WitTexts.GetAppURL(Configuration.GetApplicationId(), WitTexts.WitAppEndpointType.Settings);
-        protected virtual string DocsUrl => WitTexts.Texts.WitDocsUrl;
-        protected virtual string OpenButtonLabel => WitTexts.Texts.WitOpenButtonLabel;
+        public virtual Texture2D HeaderIcon => WitTexts.HeaderIcon;
+        public virtual string HeaderUrl => WitTexts.GetAppURL(WitConfigurationUtility.GetAppID(configuration), WitTexts.WitAppEndpointType.Settings);
+        public virtual string OpenButtonLabel => WitTexts.Texts.WitOpenButtonLabel;
 
         public void Initialize()
         {
-            _tabs =  AppDomain.CurrentDomain.GetAssemblies()
-                .SelectMany(assembly => assembly.GetTypes())
-                .Where(type => type.IsSubclassOf(typeof(WitConfigurationEditorTab)))
-                .Select(type => (WitConfigurationEditorTab)Activator.CreateInstance(type))
-                .OrderBy(tab =>tab.TabOrder)
-                .ToArray();
-
             // Refresh configuration & auth tokens
-            Configuration = target as WitConfiguration;
+            configuration = target as WitConfiguration;
 
             // Get app server token
-            _serverToken = WitAuthUtility.GetAppServerToken(Configuration);
-            if (CanConfigurationRefresh(Configuration) && WitConfigurationUtility.IsServerTokenValid(_serverToken))
+            _serverToken = WitAuthUtility.GetAppServerToken(configuration);
+            if (CanConfigurationRefresh(configuration) && WitConfigurationUtility.IsServerTokenValid(_serverToken))
             {
                 // Get client token if needed
-                _appID = Configuration.GetApplicationId();
+                _appID = WitConfigurationUtility.GetAppID(configuration);
                 if (string.IsNullOrEmpty(_appID))
                 {
-                    Configuration.SetServerToken(_serverToken);
+                    configuration.SetServerToken(_serverToken);
                 }
                 // Refresh additional data
                 else
@@ -114,110 +89,66 @@ namespace Meta.WitAi.Windows
         public override void OnInspectorGUI()
         {
             // Init if needed
-            if (!_initialized || Configuration != target)
+            if (!_initialized || configuration != target)
             {
                 Initialize();
                 _initialized = true;
             }
 
             // Draw header
-            WitEditorUI.LayoutHeaderText(target.name, HeaderUrl, DocsUrl);
-            
+            if (drawHeader)
+            {
+                WitEditorUI.LayoutHeaderButton(HeaderIcon, HeaderUrl);
+                GUILayout.Space(WitStyles.HeaderPaddingBottom);
+                EditorGUI.indentLevel++;
+            }
 
             // Layout content
             LayoutContent();
-        }
 
-        private void GenerateManifestIfNeeded()
-        {
-            if (!Configuration.useConduit || Configuration == null)
+            // Undent
+            if (drawHeader)
             {
-                return;
-            }
-
-            // Get full manifest path & ensure it exists
-            string manifestPath = Configuration.GetManifestEditorPath();
-            _manifestAvailable = File.Exists(manifestPath);
-
-            // Auto-generate manifest
-            if (!_manifestAvailable)
-            {
-                GenerateManifest(Configuration, false);
+                EditorGUI.indentLevel--;
             }
         }
 
         private void LayoutConduitContent()
         {
-            var isServerTokenValid = WitConfigurationUtility.IsServerTokenValid(_serverToken);
-            if (!isServerTokenValid && !_disableServerPost)
+            string manifestPath = configuration.ManifestEditorPath;
+            manifestAvailable = File.Exists(manifestPath);
+
+            var useConduit = (GUILayout.Toggle(configuration.useConduit, "Use Conduit (Beta)"));
+            if (configuration.useConduit != useConduit)
             {
-                GUILayout.TextArea(WitTexts.Texts.ConfigurationConduitMissingTokenLabel, WitStyles.LabelError);
+                configuration.useConduit = useConduit;
+                EditorUtility.SetDirty(configuration);
             }
 
-            // Set conduit
-            var useConduit = GUILayout.Toggle(Configuration.useConduit, "Use Conduit (Beta)");
-            if (Configuration.useConduit != useConduit)
+            EditorGUI.BeginDisabledGroup(!configuration.useConduit);
             {
-                Configuration.useConduit = useConduit;
-                EditorUtility.SetDirty(Configuration);
-            }
-
-            GenerateManifestIfNeeded();
-
-            // Configuration buttons
-            EditorGUI.indentLevel++;
-            GUILayout.Space(EditorGUI.indentLevel * WitStyles.ButtonMargin);
-            {
-                GUI.enabled = Configuration.useConduit;
-                var useRelaxedMatching = GUILayout.Toggle(Configuration.relaxedResolution, new GUIContent("Relaxed Resolution", "Allows resolving parameters by value if an exact match was not found. Disable to improve runtime performance."));
-                if (Configuration.relaxedResolution != useRelaxedMatching)
+                EditorGUI.indentLevel++;
+                GUILayout.Space(EditorGUI.indentLevel * WitStyles.ButtonMargin);
                 {
-                    Configuration.relaxedResolution = useRelaxedMatching;
-                    EditorUtility.SetDirty(Configuration);
-                }
-
-                GUILayout.BeginHorizontal();
-                {
-                    if (WitEditorUI.LayoutTextButton(_manifestAvailable ? "Update Manifest" : "Generate Manifest"))
+                    GUILayout.BeginHorizontal();
+                    if (WitEditorUI.LayoutTextButton(manifestAvailable ? "Update Manifest" : "Generate Manifest"))
                     {
-                        GenerateManifest(Configuration, true);
+                        GenerateManifest(configuration, configuration.openManifestOnGeneration);
                     }
-
-                    GUI.enabled = Configuration.useConduit && _manifestAvailable;
-                    if (WitEditorUI.LayoutTextButton("Select Manifest") && _manifestAvailable)
+                    GUI.enabled = manifestAvailable;
+                    if (WitEditorUI.LayoutTextButton("Select Manifest") && manifestAvailable)
                     {
-                        Selection.activeObject =
-                            AssetDatabase.LoadAssetAtPath<TextAsset>(Configuration.GetManifestEditorPath());
-                    }
-
-                    GUI.enabled = Configuration.useConduit;
-                    if (WitEditorUI.LayoutTextButton("Specify Assemblies"))
-                    {
-                        PresentAssemblySelectionDialog();
-                    }
-
-                    if (isServerTokenValid && !_disableServerPost)
-                    {
-                        GUI.enabled = Configuration.useConduit && _manifestAvailable && !_syncInProgress;
-                        if (WitEditorUI.LayoutTextButton("Sync Entities"))
-                        {
-                            SyncEntities();
-                            GUIUtility.ExitGUI();
-                            return;
-                        }
-                        if (_isAutoTrainAvailable)
-                        {
-                            if (WitEditorUI.LayoutTextButton("Auto Train") && _manifestAvailable)
-                            {
-                                SyncEntities(() => { AutoTrainOnWitAi(Configuration); });
-                            }
-                        }
+                        Selection.activeObject = AssetDatabase.LoadAssetAtPath<TextAsset>(configuration.ManifestEditorPath);
                     }
                     GUI.enabled = true;
+                    GUILayout.EndHorizontal();
+                    GUILayout.Space(WitStyles.ButtonMargin);
+                    configuration.autoGenerateManifest = (GUILayout.Toggle(configuration.autoGenerateManifest, "Auto Generate"));
                 }
-                GUILayout.EndHorizontal();
+                EditorGUI.indentLevel--;
+                GUILayout.TextField($"Manifests generated: {Statistics.SuccessfulGenerations}");
             }
-            EditorGUI.indentLevel--;
+            EditorGUI.EndDisabledGroup();
         }
 
         protected virtual void LayoutContent()
@@ -238,7 +169,7 @@ namespace Meta.WitAi.Windows
 
             _foldout = WitEditorUI.LayoutFoldout(new GUIContent(foldoutText), _foldout);
             // Refresh button
-            if (CanConfigurationRefresh(Configuration))
+            if (CanConfigurationRefresh(configuration))
             {
                 if (string.IsNullOrEmpty(_appName))
                 {
@@ -251,7 +182,7 @@ namespace Meta.WitAi.Windows
                 }
                 else
                 {
-                    bool isRefreshing = Configuration.IsUpdatingData();
+                    bool isRefreshing = configuration.IsRefreshingData();
                     GUI.enabled = !isRefreshing;
                     if (WitEditorUI.LayoutTextButton(isRefreshing ? WitTexts.Texts.ConfigurationRefreshingButtonLabel : WitTexts.Texts.ConfigurationRefreshButtonLabel))
                     {
@@ -272,13 +203,13 @@ namespace Meta.WitAi.Windows
                 // Server access token
                 bool updated = false;
                 WitEditorUI.LayoutPasswordField(WitTexts.ConfigurationServerTokenContent, ref _serverToken, ref updated);
-                if (updated && WitConfigurationUtility.IsServerTokenValid(_serverToken))
+                if (updated)
                 {
                     ApplyServerToken(_serverToken);
                 }
 
                 // Additional data
-                if (Configuration)
+                if (configuration)
                 {
                     LayoutConfigurationData();
                 }
@@ -308,44 +239,27 @@ namespace Meta.WitAi.Windows
         private void ReloadAppData()
         {
             // Check for changes
-            string checkID = "";
             string checkName = "";
-            if (Configuration != null)
+            string checkID = "";
+            if (configuration != null && configuration.application != null)
             {
-                checkID = Configuration.GetApplicationId();
-                if (!string.IsNullOrEmpty(checkID))
-                {
-                    checkName = Configuration.GetApplicationInfo().name;
-                }
+                checkName = configuration.application.name;
+                checkID = configuration.application.id;
             }
             // Reset
             if (!string.Equals(_appName, checkName) || !string.Equals(_appID, checkID))
             {
-                // Refresh app data
                 _appName = checkName;
                 _appID = checkID;
-
-                // Do not clear token if failed to set
-                string newToken = WitAuthUtility.GetAppServerToken(Configuration);
-                if (!string.IsNullOrEmpty(newToken))
-                {
-                    _serverToken = newToken;
-                }
+                _serverToken = WitAuthUtility.GetAppServerToken(configuration);
             }
         }
         // Apply server token
         public void ApplyServerToken(string newToken)
         {
-            if (newToken != _serverToken)
-            {
-                _serverToken = newToken;
-                Configuration.ResetData();
-            }
-
-            WitAuthUtility.ServerToken = _serverToken;
-            Configuration.SetServerToken(_serverToken);
-
-            GenerateManifestIfNeeded();
+            _serverToken = newToken;
+            configuration.ResetData();
+            configuration.SetServerToken(_serverToken);
         }
         // Whether or not to allow a configuration to refresh
         protected virtual bool CanConfigurationRefresh(WitConfiguration configuration)
@@ -358,18 +272,17 @@ namespace Meta.WitAi.Windows
             // Reset update
             bool updated = false;
             // Client access field
-            string clientAccessToken = Configuration.GetClientAccessToken();
-            WitEditorUI.LayoutPasswordField(WitTexts.ConfigurationClientTokenContent, ref clientAccessToken, ref updated);
-            if (updated && string.IsNullOrEmpty(clientAccessToken))
+            WitEditorUI.LayoutPasswordField(WitTexts.ConfigurationClientTokenContent, ref configuration.clientAccessToken, ref updated);
+            if (updated && string.IsNullOrEmpty(configuration.clientAccessToken))
             {
-                VLog.E("Client access token is not defined. Cannot perform requests with '" + Configuration.name + "'.");
+                Debug.LogError("Client access token is not defined. Cannot perform requests with '" + configuration.name + "'.");
             }
             // Timeout field
-            WitEditorUI.LayoutIntField(WitTexts.ConfigurationRequestTimeoutContent, ref Configuration.timeoutMS, ref updated);
+            WitEditorUI.LayoutIntField(WitTexts.ConfigurationRequestTimeoutContent, ref configuration.timeoutMS, ref updated);
             // Updated
             if (updated)
             {
-                Configuration.SetClientAccessToken(clientAccessToken);
+                EditorUtility.SetDirty(configuration);
             }
 
             // Show configuration app data
@@ -379,14 +292,14 @@ namespace Meta.WitAi.Windows
         protected virtual void LayoutConfigurationEndpoint()
         {
             // Generate if needed
-            if (Configuration.endpointConfiguration == null)
+            if (configuration.endpointConfiguration == null)
             {
-                Configuration.endpointConfiguration = new WitEndpointConfig();
-                EditorUtility.SetDirty(Configuration);
+                configuration.endpointConfiguration = new WitEndpointConfig();
+                EditorUtility.SetDirty(configuration);
             }
 
             // Handle via serialized object
-            var serializedObj = new SerializedObject(Configuration);
+            var serializedObj = new SerializedObject(configuration);
             var serializedProp = serializedObj.FindProperty("endpointConfiguration");
             EditorGUILayout.PropertyField(serializedProp);
             serializedObj.ApplyModifiedProperties();
@@ -394,24 +307,22 @@ namespace Meta.WitAi.Windows
         // Tabs
         protected virtual void LayoutConfigurationRequestTabs()
         {
-            // Application info
-            Data.Info.WitAppInfo appInfo = Configuration.GetApplicationInfo();
-
             // Indent
             EditorGUI.indentLevel++;
 
             // Iterate tabs
-            if (_tabs != null)
+            if (_tabIds != null)
             {
                 GUILayout.BeginHorizontal();
-                for (int i = 0; i < _tabs.Length; i++)
+                for (int i = 0; i < _tabIds.Length; i++)
                 {
                     // Enable if not selected
                     GUI.enabled = _requestTab != i;
                     // If valid and clicked, begin selecting
-                    if (null != appInfo.id &&_tabs[i].ShouldTabShow(appInfo))
+                    string tabPropertyID = _tabIds[i];
+                    if (ShouldTabShow(configuration, tabPropertyID))
                     {
-                        if (WitEditorUI.LayoutTabButton(_tabs[i].GetTabText(true)))
+                        if (WitEditorUI.LayoutTabButton(GetTabText(configuration, tabPropertyID, true)))
                         {
                             _requestTab = i;
                         }
@@ -422,85 +333,100 @@ namespace Meta.WitAi.Windows
                         _requestTab = -1;
                     }
                 }
-
                 GUI.enabled = true;
                 GUILayout.EndHorizontal();
+            }
 
-                // Layout selected tab using property id
-                string propertyID = _requestTab >= 0 && _requestTab < _tabs.Length
-                    ? _tabs[_requestTab].TabID
-                    : string.Empty;
-                if (!string.IsNullOrEmpty(propertyID) && Configuration != null)
+            // Layout selected tab using property id
+            string propertyID = _requestTab >= 0 && _requestTab < _tabIds.Length ? _tabIds[_requestTab] : string.Empty;
+            if (!string.IsNullOrEmpty(propertyID) && configuration != null)
+            {
+                SerializedObject serializedObj = new SerializedObject(configuration);
+                SerializedProperty serializedProp = serializedObj.FindProperty(propertyID);
+                if (serializedProp == null)
                 {
-                    SerializedObject serializedObj = new SerializedObject(Configuration);
-                    SerializedProperty serializedProp = serializedObj.FindProperty(_tabs[_requestTab].GetPropertyName(propertyID));
-                    if (serializedProp == null)
-                    {
-                        WitEditorUI.LayoutErrorLabel(_tabs[_requestTab].GetTabText(false));
-                    }
-                    else if (!serializedProp.isArray)
-                    {
-                        EditorGUILayout.PropertyField(serializedProp);
-                    }
-                    else if (serializedProp.arraySize == 0)
-                    {
-                        WitEditorUI.LayoutErrorLabel(_tabs[_requestTab].GetTabText(false));
-                    }
-                    else
-                    {
-                        for (int i = 0; i < serializedProp.arraySize; i++)
-                        {
-                            SerializedProperty serializedPropChild = serializedProp.GetArrayElementAtIndex(i);
-                            EditorGUILayout.PropertyField(serializedPropChild);
-                        }
-                    }
-
-                    serializedObj.ApplyModifiedProperties();
+                    WitEditorUI.LayoutErrorLabel(GetTabText(configuration, propertyID, false));
                 }
+                else if (!serializedProp.isArray)
+                {
+                    EditorGUILayout.PropertyField(serializedProp);
+                }
+                else if (serializedProp.arraySize == 0)
+                {
+                    WitEditorUI.LayoutErrorLabel(GetTabText(configuration, propertyID, false));
+                }
+                else
+                {
+                    for (int i = 0; i < serializedProp.arraySize; i++)
+                    {
+                        SerializedProperty serializedPropChild = serializedProp.GetArrayElementAtIndex(i);
+                        EditorGUILayout.PropertyField(serializedPropChild);
+                    }
+                }
+                serializedObj.ApplyModifiedProperties();
             }
 
             // Undent
             EditorGUI.indentLevel--;
         }
+        // Determine if tab should show
+        protected virtual bool ShouldTabShow(WitConfiguration configuration, string tabID)
+        {
+            if(null == configuration.application ||
+                   string.IsNullOrEmpty(configuration.application.id))
+            {
+                return false;
+            }
 
+            switch (tabID)
+            {
+                case TAB_INTENTS_ID:
+                    return null != configuration.intents;
+                case TAB_ENTITIES_ID:
+                    return null != configuration.entities;
+                case TAB_TRAITS_ID:
+                    return null != configuration.traits;
+            }
+
+            return true;
+        }
+        // Get tab text
+        protected virtual string GetTabText(WitConfiguration configuration, string tabID, bool titleLabel)
+        {
+            switch (tabID)
+            {
+                case TAB_APPLICATION_ID:
+                    return titleLabel ? WitTexts.Texts.ConfigurationApplicationTabLabel : WitTexts.Texts.ConfigurationApplicationMissingLabel;
+                case TAB_INTENTS_ID:
+                    return titleLabel ? WitTexts.Texts.ConfigurationIntentsTabLabel : WitTexts.Texts.ConfigurationIntentsMissingLabel;
+                case TAB_ENTITIES_ID:
+                    return titleLabel ? WitTexts.Texts.ConfigurationEntitiesTabLabel : WitTexts.Texts.ConfigurationEntitiesMissingLabel;
+                case TAB_TRAITS_ID:
+                    return titleLabel ? WitTexts.Texts.ConfigurationTraitsTabLabel : WitTexts.Texts.ConfigurationTraitsMissingLabel;
+            }
+            return string.Empty;
+        }
         // Safe refresh
         protected virtual void SafeRefresh()
         {
-            if (EditorApplication.isPlayingOrWillChangePlaymode) return;
-
             if (WitConfigurationUtility.IsServerTokenValid(_serverToken))
             {
-                Configuration.SetServerToken(_serverToken);
+                configuration.ResetData();
+                configuration.SetServerToken(_serverToken);
             }
-            else if (WitConfigurationUtility.IsClientTokenValid(Configuration.GetClientAccessToken()))
+            else if (WitConfigurationUtility.IsClientTokenValid(configuration.clientAccessToken))
             {
-                Configuration.RefreshAppInfo();
+                configuration.RefreshData();
             }
-            if (Configuration.useConduit)
-            {
-                CheckAutoTrainAvailabilityIfNeeded();
-            }
-        }
-
-        private void CheckAutoTrainAvailabilityIfNeeded()
-        {
-            if (_didCheckAutoTrainAvailability || !WitConfigurationUtility.IsServerTokenValid(_serverToken)) {
-                return;
-            }
-
-            _didCheckAutoTrainAvailability = true;
-            CheckAutoTrainIsAvailable(Configuration, (isAvailable) => {
-                _isAutoTrainAvailable = isAvailable;
-            });
         }
 
         [UnityEditor.Callbacks.DidReloadScripts]
         private static void OnScriptsReloaded() {
-            foreach (var configuration in WitConfigurationUtility.GetLoadedConfigurations())
+            foreach (var witConfig in WitConfigurationUtility.WitConfigs)
             {
-                if (configuration != null && configuration.useConduit)
+                if (witConfig.useConduit && witConfig.autoGenerateManifest)
                 {
-                    GenerateManifest(configuration, false);
+                    GenerateManifest(witConfig, false);
                 }
             }
         }
@@ -512,32 +438,31 @@ namespace Meta.WitAi.Windows
         /// <param name="openManifest">If true, will open the manifest file in the code editor.</param>
         private static void GenerateManifest(WitConfiguration configuration, bool openManifest)
         {
-            AssemblyWalker.AssembliesToIgnore = new HashSet<string>(configuration.excludedAssemblies);
-
             // Generate
             var startGenerationTime = DateTime.UtcNow;
-            var appInfo = configuration.GetApplicationInfo();
-            var manifest = ManifestGenerator.GenerateManifest(appInfo.name, appInfo.id);
+            var manifest = ManifestGenerator.GenerateManifest(configuration.application.name,
+                configuration.application.id);
             var endGenerationTime = DateTime.UtcNow;
 
             // Get file path
-            var fullPath = configuration.GetManifestEditorPath();
+            string fullPath = configuration.ManifestEditorPath;
             if (string.IsNullOrEmpty(fullPath) || !File.Exists(fullPath))
             {
-                fullPath = GetManifestPullPath(configuration, true);
+                string directory = Application.dataPath + "/Oculus/Voice/Resources";
+                IOUtility.CreateDirectory(directory, true);
+                fullPath = directory + "/" + configuration.manifestLocalPath;
             }
 
             // Write to file
             try
             {
                 var writer = new StreamWriter(fullPath);
-                writer.NewLine = "\n";
                 writer.WriteLine(manifest);
                 writer.Close();
             }
             catch (Exception e)
             {
-                VLog.E($"Conduit manifest failed to generate\nPath: {fullPath}\n{e}");
+                Debug.LogError($"Wit Configuration Editor - Conduit Manifest Creation Failed\nPath: {fullPath}\n{e}");
                 return;
             }
 
@@ -545,125 +470,14 @@ namespace Meta.WitAi.Windows
             Statistics.AddFrequencies(AssemblyMiner.SignatureFrequency);
             Statistics.AddIncompatibleFrequencies(AssemblyMiner.IncompatibleSignatureFrequency);
             var generationTime = endGenerationTime - startGenerationTime;
-            var unityPath = fullPath.Replace(Application.dataPath, "Assets");
-            AssetDatabase.ImportAsset(unityPath);
+            AssetDatabase.ImportAsset(fullPath.Replace(Application.dataPath, "Assets"));
 
-            var configName = configuration.name;
-            var manifestName = Path.GetFileNameWithoutExtension(unityPath);
-            #if UNITY_2021_2_OR_NEWER
-            var configPath = AssetDatabase.GetAssetPath(configuration);
-            configName = $"<a href=\"{configPath}\">{configName}</a>";
-            manifestName = $"<a href=\"{unityPath}\">{manifestName}</a>";
-            #endif
-            VLog.D($"Conduit manifest generated\nConfiguration: {configName}\nManifest: {manifestName}\nGeneration Time: {generationTime.TotalMilliseconds} ms");
+            Debug.Log($"Done generating manifest. Total time: {generationTime.TotalMilliseconds} ms");
 
             if (openManifest)
             {
                 UnityEditorInternal.InternalEditorUtility.OpenFileAtLineExternal(fullPath, 1);
             }
-        }
-
-        // Show dialog to disable/enable assemblies
-        private void PresentAssemblySelectionDialog()
-        {
-            var assemblyNames = AssemblyWalker.GetAllAssemblies().Select(a => a.FullName).ToList();
-            AssemblyWalker.AssembliesToIgnore = new HashSet<string>(Configuration.excludedAssemblies);
-            WitMultiSelectionPopup.Show(assemblyNames, AssemblyWalker.AssembliesToIgnore, (disabledAssemblies) => {
-                AssemblyWalker.AssembliesToIgnore = new HashSet<string>(disabledAssemblies);
-                Configuration.excludedAssemblies = new List<string>(AssemblyWalker.AssembliesToIgnore);
-                GenerateManifestIfNeeded();
-            });
-        }
-
-        // Sync entities
-        private void SyncEntities(Action successCallback = null)
-        {
-            if (!EditorUtility.DisplayDialog("Synchronizing with Wit.Ai entities", "This will synchronize local enums with Wit.Ai entities. Part of this process involves generating code locally and may result in overwriting existing code. Please make sure to backup your work before proceeding.", "Proceed", "Cancel", DialogOptOutDecisionType.ForThisSession, ENTITY_SYNC_CONSENT_KEY))
-            {
-                VLog.D("Entity Sync cancelled");
-                return;
-            }
-
-            // Fail without server token
-            var validServerToken = WitConfigurationUtility.IsServerTokenValid(_serverToken);
-            if (!validServerToken)
-            {
-                VLog.E($"Conduit Sync Failed\nError: Invalid server token");
-                return;
-            }
-
-            // Generate
-            if (_enumSynchronizer == null)
-            {
-                _enumSynchronizer = new EnumSynchronizer(Configuration, AssemblyWalker, new FileIo(), VRequestFactory);
-            }
-
-            // Sync
-            _syncInProgress = true;
-            EditorUtility.DisplayProgressBar("Conduit Entity Sync", "Generating Manifest.", 0f );
-            GenerateManifest(Configuration, false);
-            var manifest = ManifestLoader.LoadManifest(Configuration.ManifestLocalPath);
-            const float initializationProgress = 0.1f;
-            EditorUtility.DisplayProgressBar("Conduit Entity Sync", "Synchronizing entities. Please wait...", initializationProgress);
-            VLog.D("Synchronizing enums with Wit.Ai entities");
-            CoroutineUtility.StartCoroutine(_enumSynchronizer.SyncWitEntities(manifest, (success, data) =>
-                {
-                    _syncInProgress = false;
-                    EditorUtility.ClearProgressBar();
-                    if (!success)
-                    {
-                        VLog.E($"Conduit failed to synchronize entities\nError: {data}");
-                    }
-                    else
-                    {
-                        VLog.D("Conduit successfully synchronized entities");
-                        successCallback?.Invoke();
-                    }
-                },
-                (status, progress) =>
-                {
-                    EditorUtility.DisplayProgressBar("Conduit Entity Sync", status,
-                        initializationProgress + (1f - initializationProgress) * progress);
-                }));
-        }
-
-        private static void AutoTrainOnWitAi(WitConfiguration configuration)
-        {
-            var manifest = ManifestLoader.LoadManifest(configuration.ManifestLocalPath);
-            var intents = ManifestGenerator.ExtractManifestData();
-            VLog.D($"Auto training on WIT.ai: {intents.Count} intents.");
-
-            configuration.ImportData(manifest, (isSuccess, error) =>
-            {
-                if (isSuccess)
-                {
-                    EditorUtility.DisplayDialog("Auto Train", "Successfully started auto train process on WIT.ai.",
-                        "OK");
-                }
-                else
-                {
-                    VLog.E($"Failed to import generated manifest JSON into WIT.ai: {error}. Manifest:\n{manifest}");
-                    EditorUtility.DisplayDialog("Auto Train", "Failed to start auto train process on WIT.ai.", "OK");
-                }
-            });
-        }
-
-        private static void CheckAutoTrainIsAvailable(WitConfiguration configuration, Action<bool> onComplete)
-        {
-            Meta.WitAi.Data.Info.WitAppInfo appInfo = configuration.GetApplicationInfo();
-            string manifestText = ManifestGenerator.GenerateEmptyManifest(appInfo.name, appInfo.id);
-            var manifest = ManifestLoader.LoadManifestFromString(manifestText);
-            configuration.ImportData(manifest, (result, error) => onComplete(result), true);
-        }
-
-        private static string GetManifestPullPath(WitConfiguration configuration, bool shouldCreateDirectoryIfNotExist = false)
-        {
-            string directory = Application.dataPath + "/Oculus/Voice/Resources";
-            if (shouldCreateDirectoryIfNotExist)
-            {
-                IOUtility.CreateDirectory(directory, true);
-            }
-            return directory + "/" + configuration.ManifestLocalPath;
         }
     }
 }

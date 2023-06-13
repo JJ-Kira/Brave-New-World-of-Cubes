@@ -19,11 +19,12 @@
  */
 
 using UnityEngine;
+using UnityEngine.Assertions;
 
 namespace Oculus.Interaction
 {
     public class GrabInteractable : PointerInteractable<GrabInteractor, GrabInteractable>,
-                                      IRigidbodyRef, ICollidersRef
+                                      IRigidbodyRef
     {
         private Collider[] _colliders;
         public Collider[] Colliders => _colliders;
@@ -89,20 +90,20 @@ namespace Oculus.Interaction
         protected override void Awake()
         {
             base.Awake();
-        }
-
-        protected override void Start()
-        {
-            this.BeginStart(ref _started, () => base.Start());
-            this.AssertField(Rigidbody, nameof(Rigidbody));
             if (_grabRegistry == null)
             {
                 _grabRegistry = new CollisionInteractionRegistry<GrabInteractor, GrabInteractable>();
                 SetRegistry(_grabRegistry);
             }
+        }
+
+        protected override void Start()
+        {
+            this.BeginStart(ref _started, () => base.Start());
+            Assert.IsNotNull(Rigidbody);
             _colliders = Rigidbody.GetComponentsInChildren<Collider>();
-            this.AssertCollectionField(_colliders, nameof(_colliders),
-               $"The associated {AssertUtils.Nicify(nameof(Rigidbody))} must have at least one Collider.");
+            Assert.IsTrue(Colliders.Length > 0,
+            "The associated Rigidbody must have at least one Collider.");
             this.EndStart(ref _started);
         }
 
@@ -158,6 +159,7 @@ namespace Oculus.Interaction
         {
             _physicsGrabbable = physicsGrabbable;
         }
+
         #endregion
     }
 }

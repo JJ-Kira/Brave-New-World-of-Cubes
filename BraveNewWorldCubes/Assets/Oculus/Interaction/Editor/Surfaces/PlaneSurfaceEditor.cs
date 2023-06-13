@@ -27,12 +27,10 @@ namespace Oculus.Interaction.Editor
     [CustomEditor(typeof(PlaneSurface))]
     public class PlaneSurfaceEditor : UnityEditor.Editor
     {
-        private const int NUM_SEGMENTS = 40;
-        private const float FADE_DISTANCE = 10f;
+        private const int NUM_SEGMENTS = 20;
+        private const float FADE_DISTANCE = 20f;
 
-        private static readonly Color Color = EditorConstants.PRIMARY_COLOR_DISABLED;
-
-        private static float Interval => FADE_DISTANCE / NUM_SEGMENTS;
+        private static readonly Color Color = Color.green * 0.8f;
 
         public void OnSceneGUI()
         {
@@ -46,26 +44,23 @@ namespace Oculus.Interaction.Editor
 
             if (SceneView.lastActiveSceneView?.camera != null)
             {
-                Transform camTransform = SceneView.lastActiveSceneView.camera.transform;
-                if (plane.ClosestSurfacePoint(camTransform.position, out SurfaceHit hit, 0))
+                Vector3 sceneCamPos = SceneView.lastActiveSceneView.camera.transform.position;
+                if (plane.ClosestSurfacePoint(sceneCamPos, out SurfaceHit hit, 0))
                 {
-                    Vector3 hitDelta = PoseUtils.Delta(plane.transform, new Pose(hit.Point, plane.transform.rotation)).position;
-                    hitDelta.x = Mathf.RoundToInt(hitDelta.x / Interval) * Interval;
-                    hitDelta.y = Mathf.RoundToInt(hitDelta.y / Interval) * Interval;
-                    hitDelta.z = 0f;
-                    origin = PoseUtils.Multiply(plane.transform.GetPose(), new Pose(hitDelta, Quaternion.identity)).position;
+                    origin = hit.Point;
                 }
             }
 
-            DrawLines(origin, plane.Normal, plane.transform.up, Color);
-            DrawLines(origin, plane.Normal, -plane.transform.up, Color);
-            DrawLines(origin, plane.Normal, plane.transform.right, Color);
-            DrawLines(origin, plane.Normal, -plane.transform.right, Color);
+            DrawLines(origin, plane.Normal, plane.transform.up, FADE_DISTANCE, Color);
+            DrawLines(origin, plane.Normal, -plane.transform.up, FADE_DISTANCE, Color);
+            DrawLines(origin, plane.Normal, plane.transform.right, FADE_DISTANCE, Color);
+            DrawLines(origin, plane.Normal, -plane.transform.right, FADE_DISTANCE, Color);
         }
 
         private static void DrawLines(in Vector3 origin,
                                       in Vector3 normal,
                                       in Vector3 direction,
+                                      in float fadeDistance,
                                       in Color baseColor)
         {
             Color prevColor = Handles.color;
@@ -77,7 +72,7 @@ namespace Oculus.Interaction.Editor
                 Handles.color = color;
 
                 Vector3 cross = Vector3.Cross(normal, direction).normalized;
-                float interval = Interval;
+                float interval = fadeDistance / NUM_SEGMENTS;
 
                 for (int j = -NUM_SEGMENTS; j < NUM_SEGMENTS; ++j)
                 {

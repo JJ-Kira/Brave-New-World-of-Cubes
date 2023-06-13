@@ -19,8 +19,8 @@
  */
 
 using System;
-using Meta.WitAi;
-using Meta.WitAi.Json;
+using Facebook.WitAi;
+using Facebook.WitAi.Lib;
 using UnityEngine;
 
 namespace Oculus.Voice.Demo.UIShapesDemo

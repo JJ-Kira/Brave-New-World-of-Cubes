@@ -21,13 +21,14 @@
 using Oculus.Interaction.GrabAPI;
 using Oculus.Interaction.Input;
 using UnityEngine;
+using UnityEngine.Assertions;
 
 namespace Oculus.Interaction
 {
     public class HandPinchOffset : MonoBehaviour
     {
         [SerializeField, Interface(typeof(IHand))]
-        private UnityEngine.Object _hand;
+        private MonoBehaviour _hand;
         public IHand Hand { get; private set; }
 
         [SerializeField]
@@ -46,8 +47,8 @@ namespace Oculus.Interaction
         protected virtual void Start()
         {
             this.BeginStart(ref _started);
-            this.AssertField(Hand, nameof(Hand));
-            this.AssertField(_handGrabApi, nameof(_handGrabApi));
+            Assert.IsNotNull(Hand);
+            Assert.IsNotNull(_handGrabApi);
             this.EndStart(ref _started);
         }
 
@@ -72,13 +73,11 @@ namespace Oculus.Interaction
             Vector3 center = _handGrabApi.GetPinchCenter();
             if (_collider != null)
             {
-                center = _collider.ClosestPoint(center);
+                transform.position = _collider.ClosestPoint(center);
             }
-
-            transform.position = center;
-            if (Hand.GetRootPose(out Pose pose))
+            else
             {
-                transform.rotation = pose.rotation;
+                transform.position = center;
             }
         }
 
@@ -94,7 +93,7 @@ namespace Oculus.Interaction
         public void InjectHand(IHand hand)
         {
             Hand = hand;
-            _hand = hand as UnityEngine.Object;
+            _hand = hand as MonoBehaviour;
         }
 
         public void InjectHandGrabAPI(HandGrabAPI handGrabApi)

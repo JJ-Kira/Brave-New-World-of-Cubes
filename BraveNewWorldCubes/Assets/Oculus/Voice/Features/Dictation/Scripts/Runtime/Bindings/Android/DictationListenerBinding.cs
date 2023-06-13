@@ -19,10 +19,9 @@
  */
 
 using UnityEngine;
-using Meta.WitAi;
-using Meta.WitAi.Dictation;
-using Meta.WitAi.Dictation.Data;
-using Meta.WitAi.Dictation.Events;
+using Facebook.WitAi.Dictation;
+using Facebook.WitAi.Dictation.Data;
+using Facebook.WitAi.Dictation.Events;
 
 namespace Oculus.Voice.Dictation.Bindings.Android
 {
@@ -41,47 +40,50 @@ namespace Oculus.Voice.Dictation.Bindings.Android
 
         public void onStart(string sessionId)
         {
-            DictationEvents.OnStartListening?.Invoke();
+            DictationEvents.onStart?.Invoke();
             DictationSession session = new PlatformDictationSession()
             {
                 dictationService = _dictationService,
                 platformSessionId = sessionId
             };
+
+            DictationEvents.onDictationSessionStarted?.Invoke(session);
         }
 
         public void onMicAudioLevel(string sessionId, int micLevel)
         {
-            DictationEvents.OnMicAudioLevelChanged?.Invoke(micLevel / 100.0f);
+            DictationEvents.onMicAudioLevel?.Invoke(micLevel / 100.0f);
         }
 
         public void onPartialTranscription(string sessionId, string transcription)
         {
-            DictationEvents.OnPartialTranscription?.Invoke(transcription);
+            DictationEvents.onPartialTranscription?.Invoke(transcription);
         }
 
         public void onFinalTranscription(string sessionId, string transcription)
         {
-            DictationEvents.OnFullTranscription?.Invoke(transcription);
+            DictationEvents.onFullTranscription?.Invoke(transcription);
         }
 
         public void onError(string sessionId, string errorType, string errorMessage)
         {
-            DictationEvents.OnError?.Invoke(errorType, errorMessage);
+            DictationEvents.onError?.Invoke(errorType, errorMessage);
         }
 
         public void onStopped(string sessionId)
         {
-            DictationEvents.OnStoppedListening?.Invoke();
+            DictationEvents.onStopped?.Invoke();
             DictationSession session = new PlatformDictationSession()
             {
                 dictationService = _dictationService,
                 platformSessionId = sessionId
             };
+            DictationEvents.onDictationSessionStopped?.Invoke(session);
         }
 
         public void onServiceNotAvailable(string error, string message)
         {
-            VLog.W("Platform dictation service is not available");
+            Debug.LogWarning("Platform dictation service is not available");
             _serviceEvents.OnServiceNotAvailable(error, message);
         }
     }

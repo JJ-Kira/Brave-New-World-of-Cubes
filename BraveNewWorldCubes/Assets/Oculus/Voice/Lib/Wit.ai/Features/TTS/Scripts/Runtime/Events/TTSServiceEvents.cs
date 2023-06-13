@@ -9,7 +9,7 @@
 using System;
 using UnityEngine;
 
-namespace Meta.WitAi.TTS.Events
+namespace Facebook.WitAi.TTS.Events
 {
     [Serializable]
     public class TTSServiceEvents

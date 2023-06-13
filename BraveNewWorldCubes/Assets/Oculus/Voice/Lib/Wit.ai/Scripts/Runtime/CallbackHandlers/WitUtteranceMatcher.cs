@@ -7,11 +7,11 @@
  */
 
 using System.Text.RegularExpressions;
-using Meta.WitAi.Json;
-using Meta.WitAi.Utilities;
+using Facebook.WitAi.Lib;
+using Facebook.WitAi.Utilities;
 using UnityEngine;
 
-namespace Meta.WitAi.CallbackHandlers
+namespace Facebook.WitAi.CallbackHandlers
 {
     [AddComponentMenu("Wit.ai/Response Matchers/Utterance Matcher")]
     public class WitUtteranceMatcher : WitResponseHandler
@@ -24,24 +24,10 @@ namespace Meta.WitAi.CallbackHandlers
 
         private Regex regex;
 
-        protected override string OnValidateResponse(WitResponseNode response, bool isEarlyResponse)
+        protected override void OnHandleResponse(WitResponseNode response)
         {
             var text = response["text"].Value;
-            if (!IsMatch(text))
-            {
-                return "Required utterance does not match";
-            }
-            return "";
-        }
-        protected override void OnResponseInvalid(WitResponseNode response, string error){}
-        protected override void OnResponseSuccess(WitResponseNode response)
-        {
-            var text = response["text"].Value;
-            onUtteranceMatched?.Invoke(text);
-        }
 
-        private bool IsMatch(string text)
-        {
             if (useRegex)
             {
                 if (null == regex)
@@ -54,23 +40,22 @@ namespace Meta.WitAi.CallbackHandlers
                 {
                     if (exactMatch && match.Value == text)
                     {
-                        return true;
+                        onUtteranceMatched?.Invoke(text);
                     }
                     else
                     {
-                        return true;
+                        onUtteranceMatched?.Invoke(text);
                     }
                 }
             }
             else if (exactMatch && text.ToLower() == searchText.ToLower())
             {
-                return true;
+                onUtteranceMatched?.Invoke(text);
             }
             else if (text.ToLower().Contains(searchText.ToLower()))
             {
-                return true;
+                onUtteranceMatched?.Invoke(text);
             }
-            return false;
         }
     }
 }

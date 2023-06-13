@@ -3,7 +3,8 @@
 --- !u!78 &1
 TagManager:
   serializedVersion: 2
-  tags: []
+  tags:
+  - FX
   layers:
   - Default
   - TransparentFX
@@ -13,15 +14,15 @@ TagManager:
   - UI
   - 
   - 
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
+  - RoomBox
+  - Furniture
+  - Passthrough
+  - Floor
+  - Terrain
+  - Oppy
+  - Balls
+  - BallDebris
+  - NavMeshCollision
   - 
   - 
   - 

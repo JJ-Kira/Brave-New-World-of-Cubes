@@ -9,7 +9,7 @@
 #if UNITY_EDITOR
 using System;
 
-namespace Meta.WitAi
+namespace Facebook.WitAi
 {
     // Wit Settings
     [Serializable]

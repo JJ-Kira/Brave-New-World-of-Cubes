@@ -12,7 +12,7 @@ using System.IO;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Meta.WitAi
+namespace Facebook.WitAi
 {
     public static class WitSettingsUtility
     {
@@ -52,13 +52,9 @@ namespace Meta.WitAi
 
             // Get file path
             string settingsFilePath = GetSettingsFilePath();
-            if (string.IsNullOrEmpty(settingsFilePath))
-            {
-                return;
-            }
             if (!File.Exists(settingsFilePath))
             {
-                VLog.W($"Wit Settings Utility - Generating new settings file\nPath{settingsFilePath}");
+                Debug.LogWarning($"Wit Settings Utility - Generating new settings file\nPath{settingsFilePath}");
                 _settings = new WitSettings();
                 return;
             }
@@ -72,7 +68,7 @@ namespace Meta.WitAi
             // Catch error
             catch (Exception e)
             {
-                VLog.E($"Wit Settings Utility - Failed to load settings file\nPath{settingsFilePath}\nError: {e}");
+                Debug.LogError($"Wit Settings Utility - Failed to load settings file\nPath{settingsFilePath}\nError: {e}");
                 _settings = new WitSettings();
                 return;
             }
@@ -85,8 +81,9 @@ namespace Meta.WitAi
             // Catch error
             catch (Exception e)
             {
-                VLog.E($"Wit Settings Utility - Failed to decode settings file\nPath{settingsFilePath}\nError: {e}");
+                Debug.LogError($"Wit Settings Utility - Failed to decode settings file\nPath{settingsFilePath}\nError: {e}");
                 _settings = new WitSettings();
+                return;
             }
         }
         // Save Settings
@@ -104,7 +101,7 @@ namespace Meta.WitAi
             // Catch error
             catch (Exception e)
             {
-                VLog.E($"Wit Settings Utility - Failed to encode settings file\nPath{settingsFilePath}\nError: {e}");
+                Debug.LogError($"Wit Settings Utility - Failed to encode settings file\nPath{settingsFilePath}\nError: {e}");
                 return;
             }
 
@@ -116,7 +113,7 @@ namespace Meta.WitAi
             // Catch error
             catch (Exception e)
             {
-                VLog.E($"Wit Settings Utility - Failed to save settings file\nPath{settingsFilePath}\nError: {e}");
+                Debug.LogError($"Wit Settings Utility - Failed to save settings file\nPath{settingsFilePath}\nError: {e}");
             }
         }
         #endregion

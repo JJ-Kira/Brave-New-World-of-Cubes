@@ -27,7 +27,7 @@ namespace Oculus.Interaction
     public class PointableDebugGizmos : MonoBehaviour
     {
         [SerializeField, Interface(typeof(IPointable))]
-        private UnityEngine.Object _pointable;
+        private MonoBehaviour _pointable;
 
         [SerializeField]
         private float _radius = 0.01f;
@@ -103,13 +103,6 @@ namespace Oculus.Interaction
         private IPointable Pointable;
 
         protected bool _started = false;
-        #region Editor callbacks
-        private void Reset()
-        {
-            IPointable pointable = this.GetComponent<IPointable>();
-            this.InjectAllPointableDebugGizmos(pointable);
-        }
-        #endregion
 
         protected virtual void Awake()
         {
@@ -119,7 +112,7 @@ namespace Oculus.Interaction
         protected virtual void Start()
         {
             this.BeginStart(ref _started);
-            this.AssertField(Pointable, nameof(Pointable));
+            Assert.IsNotNull(Pointable);
             _points = new Dictionary<int, PointData>();
             this.EndStart(ref _started);
         }
@@ -191,7 +184,7 @@ namespace Oculus.Interaction
 
         public void InjectPointable(IPointable pointable)
         {
-            _pointable = pointable as UnityEngine.Object;
+            _pointable = pointable as MonoBehaviour;
             Pointable = pointable;
         }
 

@@ -19,22 +19,20 @@
  */
 
 using UnityEngine;
+using UnityEngine.Assertions;
 using UnityEngine.Events;
+using UnityEngine.Serialization;
 
 namespace Oculus.Interaction
 {
     public class ActiveStateUnityEventWrapper : MonoBehaviour
     {
-        [Tooltip("Events will fire based on the state of this IActiveState.")]
         [SerializeField, Interface(typeof(IActiveState))]
-        private UnityEngine.Object _activeState;
+        private MonoBehaviour _activeState;
         private IActiveState ActiveState;
 
-        [Tooltip("This event will be fired when the provided IActiveState becomes active.")]
         [SerializeField]
         private UnityEvent _whenActivated;
-
-        [Tooltip("This event will be fired when the provided IActiveState becomes inactive.")]
         [SerializeField]
         private UnityEvent _whenDeactivated;
 
@@ -56,7 +54,7 @@ namespace Oculus.Interaction
 
         protected virtual void Start()
         {
-            this.AssertField(ActiveState, nameof(ActiveState));
+            Assert.IsNotNull(ActiveState);
             _savedState = false;
         }
 
@@ -96,23 +94,13 @@ namespace Oculus.Interaction
 
         public void InjectActiveState(IActiveState activeState)
         {
-            _activeState = activeState as UnityEngine.Object;
+            _activeState = activeState as MonoBehaviour;
             ActiveState = activeState;
         }
 
         public void InjectOptionalEmitOnFirstUpdate(bool emitOnFirstUpdate)
         {
             _emitOnFirstUpdate = emitOnFirstUpdate;
-        }
-
-        public void InjectOptionalWhenActivated(UnityEvent whenActivated)
-        {
-            _whenActivated = whenActivated;
-        }
-
-        public void InjectOptionalWhenDeactivated(UnityEvent whenDeactivated)
-        {
-            _whenDeactivated = whenDeactivated;
         }
 
         #endregion

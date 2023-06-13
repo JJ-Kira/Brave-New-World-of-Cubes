@@ -18,7 +18,7 @@
  * limitations under the License.
  */
 
-using Meta.WitAi.Inspectors;
+using Facebook.WitAi.Inspectors;
 using UnityEditor;
 
 namespace Oculus.Voice.Inspectors

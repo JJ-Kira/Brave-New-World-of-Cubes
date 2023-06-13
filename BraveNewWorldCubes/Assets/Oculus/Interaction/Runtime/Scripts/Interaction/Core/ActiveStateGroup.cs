@@ -18,9 +18,11 @@
  * limitations under the License.
  */
 
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Assertions;
+using UnityEngine.Serialization;
 
 namespace Oculus.Interaction
 {
@@ -33,12 +35,10 @@ namespace Oculus.Interaction
             XOR = 2
         }
 
-        [Tooltip("The logic operator will be applied to these IActiveStates.")]
         [SerializeField, Interface(typeof(IActiveState))]
-        private List<UnityEngine.Object> _activeStates;
+        private List<MonoBehaviour> _activeStates;
         private List<IActiveState> ActiveStates;
 
-        [Tooltip("IActiveStates will have this boolean logic operator applied.")]
         [SerializeField]
         private ActiveStateGroupLogicOperator _logicOperator = ActiveStateGroupLogicOperator.AND;
 
@@ -49,7 +49,10 @@ namespace Oculus.Interaction
 
         protected virtual void Start()
         {
-            this.AssertCollectionItems(ActiveStates, nameof(ActiveStates));
+            foreach (IActiveState activeState in ActiveStates)
+            {
+                Assert.IsNotNull(activeState);
+            }
         }
 
         public bool Active
@@ -105,7 +108,7 @@ namespace Oculus.Interaction
         public void InjectActiveStates(List<IActiveState> activeStates)
         {
             ActiveStates = activeStates;
-            _activeStates = activeStates.ConvertAll(activeState => activeState as UnityEngine.Object);
+            _activeStates = activeStates.ConvertAll(activeState => activeState as MonoBehaviour);
         }
 
         public void InjectOptionalLogicOperator(ActiveStateGroupLogicOperator logicOperator)

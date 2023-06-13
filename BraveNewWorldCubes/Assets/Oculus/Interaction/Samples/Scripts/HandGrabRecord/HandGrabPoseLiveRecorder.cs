@@ -64,15 +64,13 @@ namespace Oculus.Interaction.HandGrab.Recorder
             public HandPose RawHandPose { get; private set; }
             public Pose GrabPoint { get; private set; }
             public Rigidbody Item { get; private set; }
-            public float HandScale { get; private set; }
 
             public HandGrabInteractable interactable;
 
-            public RecorderStep(HandPose rawPose, Pose grabPoint, float scale, Rigidbody item)
+            public RecorderStep(HandPose rawPose, Pose grabPoint, Rigidbody item)
             {
                 this.RawHandPose = new HandPose(rawPose);
                 this.GrabPoint = grabPoint;
-                this.HandScale = scale;
                 this.Item = item;
                 interactable = null;
             }
@@ -230,7 +228,7 @@ namespace Oculus.Interaction.HandGrab.Recorder
             CurrentStepIndex++;
             RecorderStep recorderStep = _recorderSteps[CurrentStepIndex];
             AddHandGrabPose(recorderStep, out recorderStep.interactable, out HandGrabPose point);
-            AttachGhost(point, recorderStep.HandScale);
+            AttachGhost(point);
             _recorderSteps[CurrentStepIndex] = recorderStep;
         }
 
@@ -262,10 +260,10 @@ namespace Oculus.Interaction.HandGrab.Recorder
                 return false;
             }
 
-            Pose gripPoint = PoseUtils.DeltaScaled(item.transform, handRoot);
-            RecorderStep recorderStep = new RecorderStep(trackedHandPose, gripPoint, hand.Scale, item);
+            Pose gripPoint = item.transform.Delta(handRoot);
+            RecorderStep recorderStep = new RecorderStep(trackedHandPose, gripPoint, item);
             AddHandGrabPose(recorderStep, out recorderStep.interactable, out HandGrabPose point);
-            AttachGhost(point, recorderStep.HandScale);
+            AttachGhost(point);
 
             int nextStep = CurrentStepIndex + 1;
             if (nextStep < _recorderSteps.Count)
@@ -296,22 +294,21 @@ namespace Oculus.Interaction.HandGrab.Recorder
         private void AddHandGrabPose(RecorderStep recorderStep,
             out HandGrabInteractable interactable, out HandGrabPose handGrabPose)
         {
-            interactable = HandGrabUtils.CreateHandGrabInteractable(recorderStep.Item.transform);
+            interactable = HandGrabInteractable.Create(recorderStep.Item.transform);
             if (recorderStep.Item.TryGetComponent(out Grabbable grabbable))
             {
                 interactable.InjectOptionalPointableElement(grabbable);
             }
-
-            var pointData = new HandGrabUtils.HandGrabPoseData()
+            HandGrabPoseData pointData = new HandGrabPoseData()
             {
                 handPose = recorderStep.RawHandPose,
-                scale = (recorderStep.HandScale / interactable.RelativeTo.lossyScale.x),
+                scale = 1f,
                 gripPose = recorderStep.GrabPoint,
             };
-            handGrabPose = HandGrabUtils.LoadHandGrabPose(interactable, pointData);
+            handGrabPose = interactable.LoadHandGrabPose(pointData);
         }
 
-        private void AttachGhost(HandGrabPose point, float referenceScale)
+        private void AttachGhost(HandGrabPose point)
         {
             if (_ghostProvider == null)
             {
@@ -319,7 +316,6 @@ namespace Oculus.Interaction.HandGrab.Recorder
             }
             HandGhost ghostPrefab = _ghostProvider.GetHand(point.HandPose.Handedness);
             HandGhost ghost = GameObject.Instantiate(ghostPrefab, point.transform);
-            ghost.transform.localScale = Vector3.one * (referenceScale / point.transform.lossyScale.x);
             ghost.SetPose(point);
         }
     }

@@ -18,7 +18,7 @@
  * limitations under the License.
  */
 
-using Meta.WitAi;
+using Facebook.WitAi;
 using UnityEngine;
 
 namespace Oculus.Voice.Demo.UIShapesDemo

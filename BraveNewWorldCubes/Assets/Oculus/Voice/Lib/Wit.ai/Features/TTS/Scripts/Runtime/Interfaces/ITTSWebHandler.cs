@@ -6,10 +6,10 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-using Meta.WitAi.TTS.Data;
-using Meta.WitAi.TTS.Events;
+using Facebook.WitAi.TTS.Data;
+using Facebook.WitAi.TTS.Events;
 
-namespace Meta.WitAi.TTS.Interfaces
+namespace Facebook.WitAi.TTS.Interfaces
 {
     public interface ITTSWebHandler
     {

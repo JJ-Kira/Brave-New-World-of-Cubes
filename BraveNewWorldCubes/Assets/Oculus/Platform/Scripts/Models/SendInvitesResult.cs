@@ -10,7 +10,6 @@ namespace Oculus.Platform.Models
 
   public class SendInvitesResult
   {
-    /// The list of invites that was sent
     public readonly ApplicationInviteList Invites;
 
 

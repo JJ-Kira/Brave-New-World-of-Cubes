@@ -6,8 +6,6 @@ namespace Oculus.Platform
 {
   using System;
   using System.IO;
-  using System.Collections.Generic;
-  using System.Threading;
   using UnityEditor;
   using UnityEngine;
   using UnityEngine.Networking;
@@ -17,8 +15,6 @@ namespace Oculus.Platform
   [CustomEditor(typeof(PlatformSettings))]
   public class OculusPlatformSettingsEditor : Editor
   {
-    private const string DEFAULT_OCULUS_GRAPH_PREFIX = "https://graph.oculus.com";
-    private const string DEFAULT_META_GRAPH_PREFIX = "https://meta.graph.meta.com";
     private bool isUnityEditorSettingsExpanded;
     private bool isBuildSettingsExpanded;
 
@@ -43,19 +39,19 @@ namespace Oculus.Platform
       //
       EditorGUILayout.LabelField("Application ID:");
       GUIContent riftAppIDLabel = new GUIContent("Oculus Rift [?]", "This AppID will be used when building to the Windows target.");
-      GUIContent mobileAppIDLabel = new GUIContent("Meta Quest/2/Pro [?]", "This AppID will be used when building to the Android target");
+      GUIContent mobileAppIDLabel = new GUIContent("Oculus Go/Quest or Gear VR [?]", "This AppID will be used when building to the Android target");
       PlatformSettings.AppID = MakeTextBox(riftAppIDLabel, PlatformSettings.AppID);
       PlatformSettings.MobileAppID = MakeTextBox(mobileAppIDLabel, PlatformSettings.MobileAppID);
 
-      if (GUILayout.Button("Create / Find your app on https://developer.oculus.com/manage/"))
+      if (GUILayout.Button("Create / Find your app on https://dashboard.oculus.com"))
       {
-        UnityEngine.Application.OpenURL("https://developer.oculus.com/manage/");
+        UnityEngine.Application.OpenURL("https://dashboard.oculus.com/");
       }
 
 #if UNITY_ANDROID
       if (String.IsNullOrEmpty(PlatformSettings.MobileAppID))
       {
-        EditorGUILayout.HelpBox("Please enter a valid App ID for the Meta Quest line of products", MessageType.Error);
+        EditorGUILayout.HelpBox("Please enter a valid Oculus Go/Quest or Gear VR App ID.", MessageType.Error);
       }
       else
       {
@@ -117,7 +113,7 @@ namespace Oculus.Platform
           {
             var emailLabel = "Test User Email: ";
             var emailHint = "Test users can be configured at " +
-              "https://developer.oculus.com/manage/organizations/<your org ID>/testusers " +
+              "https://dashboard.oculus.com/organizations/<your org ID>/testusers " +
               "however any valid Oculus account email may be used.";
             StandalonePlatformSettings.OculusPlatformTestUserEmail =
               MakeTextBox(new GUIContent(emailLabel, emailHint), StandalonePlatformSettings.OculusPlatformTestUserEmail);
@@ -131,28 +127,17 @@ namespace Oculus.Platform
             var loginLabel = (!isLoggingIn) ? "Login" : "Logging in...";
 
             GUI.enabled = !isLoggingIn;
-            if (GUILayout.Button(loginLabel)) {
-              // Retrieve FRL Account access token
-              var frlAccountAccessToken = getFRLAccountAccessToken();
-              if (!String.IsNullOrEmpty(frlAccountAccessToken)) {
-                // Retrieve Horizon Profile access token
-                var horizonProfileAccessToken = getHorizonProfileAccessToken(frlAccountAccessToken);
-                if (!String.IsNullOrEmpty(horizonProfileAccessToken)) {
-                  StandalonePlatformSettings.OculusPlatformTestUserAccessToken = horizonProfileAccessToken;
-                }
-              }
+            if (GUILayout.Button(loginLabel))
+            {
+              WWWForm form = new WWWForm();
+              form.AddField("email", StandalonePlatformSettings.OculusPlatformTestUserEmail);
+              form.AddField("password", StandalonePlatformSettings.OculusPlatformTestUserPassword);
 
-              // Failed, attempt to retrieve Oculus account access token
-              if (String.IsNullOrEmpty(StandalonePlatformSettings.OculusPlatformTestUserAccessToken)) {
-                var oculusAccountAccessToken = getOculusAccountAccessToken();
-                if (!String.IsNullOrEmpty(oculusAccountAccessToken)) {
-                  StandalonePlatformSettings.OculusPlatformTestUserAccessToken = oculusAccountAccessToken;
-                }
-              }
-
-              StandalonePlatformSettings.OculusPlatformTestUserPassword = "";
-              getAccessTokenRequest.Dispose();
-              getAccessTokenRequest = null;
+              // Start the WWW request to get the access token
+              getAccessTokenRequest = UnityWebRequest.Post("https://graph.oculus.com/login", form);
+              getAccessTokenRequest.SetRequestHeader("Authorization", "Bearer OC|1141595335965881|");
+              getAccessTokenRequest.SendWebRequest();
+              EditorApplication.update += GetAccessToken;
             }
             GUI.enabled = true;
           }
@@ -230,81 +215,27 @@ namespace Oculus.Platform
         });
       }
       EditorGUILayout.Separator();
-
-#if UNITY_EDITOR_WIN
-      EditorGUILayout.HelpBox("For full Unity logs, please check C:\\Users\\<username>\\AppData\\Local\\Unity\\Editor\\Editor.log", MessageType.Info);
-#endif
     }
 
-    private string getFRLAccountAccessToken() {
-      WWWForm form = new WWWForm();
-      form.AddField("access_token", "FRL|778542610035039|2e189079414d3a6e5642a789322b1940");
-      form.AddField("contact_point_type", "EMAIL_ADDRESS");
-      form.AddField("contact_point", StandalonePlatformSettings.OculusPlatformTestUserEmail);
-      form.AddField("password", StandalonePlatformSettings.OculusPlatformTestUserPassword);
-
-      getAccessTokenRequest = UnityWebRequest.Post(DEFAULT_META_GRAPH_PREFIX + "/accounts_login", form);
-      getAccessTokenRequest.SendWebRequest();
-      for (var retries = 0; !getAccessTokenRequest.isDone && retries < 100; retries++)
+    // Asyncronously fetch the access token with the given credentials
+    private void GetAccessToken()
+    {
+      if (getAccessTokenRequest != null && getAccessTokenRequest.isDone)
       {
-        retries++;
-        Thread.Sleep(200);
-      }
+        // Clear the password
+        StandalonePlatformSettings.OculusPlatformTestUserPassword = "";
 
-      if (String.IsNullOrEmpty(getAccessTokenRequest.error)) {
-        var Response = JsonUtility.FromJson<OculusStandalonePlatformResponse>(getAccessTokenRequest.downloadHandler.text);
-        return Response.access_token;
-      }
-      return "";
-    }
-
-    private string getHorizonProfileAccessToken(String frlAccountAccessToken) {
-      var doc = "mutation FRLNuxCreateProfileTokenMutation($input: XFRCreateProfileTokenData!) { xfr_create_profile_token(data: $input) { profile_tokens { profile_id, access_token } } }";
-      MetaGraphVariablesParam variables = new MetaGraphVariablesParam("", "vr", "1141595335965881");
-      WWWForm form = new WWWForm();
-      form.AddField("access_token", frlAccountAccessToken);
-      form.AddField("doc", doc);
-      form.AddField("variables", JsonUtility.ToJson(variables));
-
-      getAccessTokenRequest.Dispose();
-      getAccessTokenRequest = UnityWebRequest.Post(DEFAULT_META_GRAPH_PREFIX + "/graphql", form);
-      getAccessTokenRequest.SendWebRequest();
-      for (var retries = 0; !getAccessTokenRequest.isDone && retries < 100; retries++)
-      {
-        retries++;
-        Thread.Sleep(200);
-      }
-
-      if (String.IsNullOrEmpty(getAccessTokenRequest.error)){
-        var result = JsonUtility.FromJson<HorizonProfileTokenResponse>(getAccessTokenRequest.downloadHandler.text);
-        var list = result.data.xfr_create_profile_token.profile_tokens;
-        if (list != null && list.Count > 0) {
-          return list[0].access_token;
+        if (String.IsNullOrEmpty(getAccessTokenRequest.error))
+        {
+          var Response = JsonUtility.FromJson<OculusStandalonePlatformResponse>(getAccessTokenRequest.downloadHandler.text);
+          StandalonePlatformSettings.OculusPlatformTestUserAccessToken = Response.access_token;
         }
-      }
-      return "";
-    }
 
-    private string getOculusAccountAccessToken() {
-      WWWForm form = new WWWForm();
-      form.AddField("email", StandalonePlatformSettings.OculusPlatformTestUserEmail);
-      form.AddField("password", StandalonePlatformSettings.OculusPlatformTestUserPassword);
-
-      getAccessTokenRequest.Dispose();
-      getAccessTokenRequest = UnityWebRequest.Post(DEFAULT_OCULUS_GRAPH_PREFIX + "/login", form);
-      getAccessTokenRequest.SetRequestHeader("Authorization", "Bearer OC|1141595335965881|");
-      getAccessTokenRequest.SendWebRequest();
-      for (var retries = 0; !getAccessTokenRequest.isDone && retries < 100; retries++)
-      {
-        retries++;
-        Thread.Sleep(200);
+        GUI.changed = true;
+        EditorApplication.update -= GetAccessToken;
+        getAccessTokenRequest.Dispose();
+        getAccessTokenRequest = null;
       }
-
-      if (String.IsNullOrEmpty(getAccessTokenRequest.error)){
-        var Response = JsonUtility.FromJson<OculusStandalonePlatformResponse>(getAccessTokenRequest.downloadHandler.text);
-        return  Response.access_token;
-      }
-      return "";
     }
 
     private string MakeTextBox(GUIContent label, string variable)

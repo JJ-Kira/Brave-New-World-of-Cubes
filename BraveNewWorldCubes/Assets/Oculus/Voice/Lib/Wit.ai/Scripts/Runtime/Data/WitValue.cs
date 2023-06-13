@@ -6,10 +6,10 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-using Meta.WitAi.Json;
+using Facebook.WitAi.Lib;
 using UnityEngine;
 
-namespace Meta.WitAi.Data
+namespace Facebook.WitAi.Data
 {
     public abstract class WitValue : ScriptableObject
     {

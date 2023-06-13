@@ -37,15 +37,7 @@ namespace Oculus.Interaction.PoseDetection
         }
     }
 
-    public interface IJointDeltaProvider
-    {
-        bool GetPositionDelta(HandJointId joint, out Vector3 delta);
-        bool GetRotationDelta(HandJointId joint, out Quaternion delta);
-        void RegisterConfig(JointDeltaConfig config);
-        void UnRegisterConfig(JointDeltaConfig config);
-    }
-
-    public class JointDeltaProvider : MonoBehaviour, IJointDeltaProvider
+    public class JointDeltaProvider : MonoBehaviour
     {
         private class PoseData
         {
@@ -55,7 +47,7 @@ namespace Oculus.Interaction.PoseDetection
         }
 
         [SerializeField, Interface(typeof(IHand))]
-        private UnityEngine.Object _hand;
+        private MonoBehaviour _hand;
         private IHand Hand;
 
         private Dictionary<HandJointId, PoseData[]> _poseDataCache =
@@ -138,9 +130,9 @@ namespace Oculus.Interaction.PoseDetection
         public void RegisterConfig(JointDeltaConfig config)
         {
             bool containsKeyAlready = _requestors.ContainsKey(config.InstanceID);
-
-            this.AssertIsTrue(!containsKeyAlready,
-                $"Trying to register multiple configs with the same id");
+            Assert.IsFalse(containsKeyAlready,
+                "Trying to register multiple configs with the same id into " +
+                "JointDeltaProvider.");
 
             _requestors.Add(config.InstanceID, new List<HandJointId>(config.JointIDs));
 
@@ -172,7 +164,7 @@ namespace Oculus.Interaction.PoseDetection
         protected virtual void Start()
         {
             this.BeginStart(ref _started);
-            this.AssertField(Hand, nameof(Hand));
+            Assert.IsNotNull(Hand);
             this.EndStart(ref _started);
         }
 

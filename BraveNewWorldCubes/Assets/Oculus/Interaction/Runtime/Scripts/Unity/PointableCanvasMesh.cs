@@ -19,6 +19,7 @@
  */
 
 using UnityEngine;
+using UnityEngine.Assertions;
 using Oculus.Interaction.UnityCanvas;
 using UnityEngine.Serialization;
 
@@ -26,7 +27,6 @@ namespace Oculus.Interaction
 {
     public class PointableCanvasMesh : PointableElement
     {
-        [Tooltip("This CanvasMesh determines the Pose of PointerEvents.")]
         [SerializeField]
         [FormerlySerializedAs("_canvasRenderTextureMesh")]
         private CanvasMesh _canvasMesh;
@@ -34,7 +34,7 @@ namespace Oculus.Interaction
         protected override void Start()
         {
             base.Start();
-            this.AssertField(_canvasMesh, nameof(_canvasMesh));
+            Assert.IsNotNull(_canvasMesh);
         }
 
         public override void ProcessPointerEvent(PointerEvent evt)
@@ -42,7 +42,7 @@ namespace Oculus.Interaction
             Vector3 transformPosition =
                 _canvasMesh.ImposterToCanvasTransformPoint(evt.Pose.position);
             Pose transformedPose = new Pose(transformPosition, evt.Pose.rotation);
-            base.ProcessPointerEvent(new PointerEvent(evt.Identifier, evt.Type, transformedPose, evt.Data));
+            base.ProcessPointerEvent(new PointerEvent(evt.Identifier, evt.Type, transformedPose));
         }
 
         #region Inject

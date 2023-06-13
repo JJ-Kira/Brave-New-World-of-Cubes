@@ -24,7 +24,6 @@ namespace Oculus.Interaction
 {
     public class Cylinder : MonoBehaviour
     {
-        [Tooltip("The radius of the cylinder.")]
         [SerializeField]
         private float _radius = 1f;
 

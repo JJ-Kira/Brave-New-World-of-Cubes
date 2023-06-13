@@ -6,9 +6,9 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-using Meta.WitAi.Json;
+using Facebook.WitAi.Lib;
 
-namespace Meta.WitAi.Data.Intents
+namespace Facebook.WitAi.Data.Intents
 {
     public class WitIntentData
     {
@@ -27,9 +27,11 @@ namespace Meta.WitAi.Data.Intents
 
         public WitIntentData FromIntentWitResponseNode(WitResponseNode node)
         {
-            WitIntentData result = this;
-            JsonConvert.DeserializeIntoObject(ref result, node);
-            return result;
+            responseNode = node;
+            id = node[WitIntent.Fields.ID];
+            name = node[WitIntent.Fields.NAME];
+            confidence = node[WitIntent.Fields.CONFIDENCE].AsFloat;
+            return this;
         }
     }
 }

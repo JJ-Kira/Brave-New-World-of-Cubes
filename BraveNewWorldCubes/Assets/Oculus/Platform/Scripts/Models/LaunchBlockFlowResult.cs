@@ -10,9 +10,7 @@ namespace Oculus.Platform.Models
 
   public class LaunchBlockFlowResult
   {
-    /// Whether the viewer successfully blocked the user.
     public readonly bool DidBlock;
-    /// Whether the viewer chose to cancel the block flow.
     public readonly bool DidCancel;
 
 

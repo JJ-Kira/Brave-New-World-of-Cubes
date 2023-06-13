@@ -6,12 +6,12 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-using Meta.WitAi.Data.Configuration;
+using Facebook.WitAi.Data.Configuration;
 #if UNITY_EDITOR
 
 #endif
 
-namespace Meta.WitAi
+namespace Facebook.WitAi
 {
     public class WitAuthUtility
     {
@@ -31,7 +31,7 @@ namespace Meta.WitAi
         public static string GetAppServerToken(WitConfiguration configuration,
             string defaultValue = "")
         {
-            return GetAppServerToken(configuration.GetApplicationId(), defaultValue);
+            return GetAppServerToken(configuration?.application?.id, defaultValue);
         }
 
         public static string GetAppServerToken(string appId, string defaultServerToken = "")

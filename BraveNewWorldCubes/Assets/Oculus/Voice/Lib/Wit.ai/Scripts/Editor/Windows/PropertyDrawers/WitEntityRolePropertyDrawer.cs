@@ -7,11 +7,11 @@
  */
 
 using UnityEditor;
-using Meta.WitAi.Data.Info;
+using Facebook.WitAi.Data.Entities;
 
-namespace Meta.WitAi.Windows
+namespace Facebook.WitAi.Windows
 {
-    [CustomPropertyDrawer(typeof(WitEntityRoleInfo))]
+    [CustomPropertyDrawer(typeof(WitEntityRole))]
     public class WitEntityRolePropertyDrawer : WitSimplePropertyDrawer
     {
         // Key = Name

@@ -20,15 +20,15 @@
 
 using UnityEditor;
 using UnityEngine;
-using Oculus.Interaction.Surfaces;
 
 namespace Oculus.Interaction.Editor
 {
     [CustomEditor(typeof(PokeInteractable))]
-    public class PokeInteractableEditor : SimplifiedEditor
+    public class PokeInteractableEditor : UnityEditor.Editor
     {
         private PokeInteractable _interactable;
 
+        private SerializedProperty _proximityFieldProperty;
         private SerializedProperty _surfaceProperty;
 
         private static readonly float DRAW_RADIUS = 0.02f;
@@ -37,30 +37,32 @@ namespace Oculus.Interaction.Editor
         {
             _interactable = target as PokeInteractable;
 
-            _surfaceProperty = serializedObject.FindProperty("_surfacePatch");
+            _proximityFieldProperty = serializedObject.FindProperty("_proximityField");
+            _surfaceProperty = serializedObject.FindProperty("_surface");
         }
 
         public void OnSceneGUI()
         {
             Handles.color = EditorConstants.PRIMARY_COLOR;
-            ISurfacePatch surfacePatch = _surfaceProperty.objectReferenceValue as ISurfacePatch;
+            Surfaces.PlaneSurface plane = _surfaceProperty.objectReferenceValue as Surfaces.PlaneSurface;
 
-            if (surfacePatch == null)
+            if (plane == null)
             {
-                // Currently only supports visualizing planar surfaces
+                // TODO support non-planar surfaces for this gizmo?
                 return;
             }
 
-            Transform triggerPlaneTransform = surfacePatch.Transform;
+            Transform triggerPlaneTransform = plane.transform;
+            IProximityField proximityField = _proximityFieldProperty.objectReferenceValue as IProximityField;
 
-            if (triggerPlaneTransform == null)
+            if (triggerPlaneTransform == null
+                || proximityField == null)
             {
                 return;
             }
 
-            Vector3 touchPoint = triggerPlaneTransform.position - triggerPlaneTransform.forward * _interactable.EnterHoverNormal;
-            surfacePatch.ClosestSurfacePoint(touchPoint, out SurfaceHit hit);
-            Vector3 proximalPoint = hit.Point;
+            Vector3 touchPoint = triggerPlaneTransform.position - triggerPlaneTransform.forward * _interactable.MaxDistance;
+            Vector3 proximalPoint = proximityField.ComputeClosestPoint(touchPoint);
 
             Handles.DrawSolidDisc(touchPoint, triggerPlaneTransform.forward, DRAW_RADIUS);
 
@@ -79,6 +81,7 @@ namespace Oculus.Interaction.Editor
             Handles.DrawLine(proximalPoint - triggerPlaneTransform.up * DRAW_RADIUS,
                 proximalPoint + triggerPlaneTransform.up * DRAW_RADIUS);
 #endif
+
         }
     }
 }

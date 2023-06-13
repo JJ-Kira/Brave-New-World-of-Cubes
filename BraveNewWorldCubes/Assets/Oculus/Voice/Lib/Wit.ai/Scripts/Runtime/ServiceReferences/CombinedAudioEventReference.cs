@@ -6,12 +6,13 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-using Meta.WitAi.Events;
-using Meta.WitAi.Events.UnityEventListeners;
-using Meta.WitAi.Interfaces;
+using Facebook.WitAi.Events;
+using Facebook.WitAi.Events.UnityEventListeners;
+using Facebook.WitAi.Interfaces;
+using UnityEngine;
 using UnityEngine.Events;
 
-namespace Meta.WitAi.ServiceReferences
+namespace Facebook.WitAi.ServiceReferences
 {
     /// <summary>
     /// Finds all audio event listeners in the scene and subscribes to them.

@@ -28,18 +28,13 @@ namespace Oculus.Interaction
     public class RayInteractor : PointerInteractor<RayInteractor, RayInteractable>
     {
         [SerializeField, Interface(typeof(ISelector))]
-        private UnityEngine.Object _selector;
+        private MonoBehaviour _selector;
 
         [SerializeField]
         private Transform _rayOrigin;
 
         [SerializeField]
         private float _maxRayLength = 5f;
-
-        [SerializeField]
-        [Tooltip("(Meters, World) The threshold below which distances to a surface " +
-                 "are treated as equal for the purposes of ranking.")]
-        private float _equalDistanceThreshold = 0.001f;
 
         private RayCandidateProperties _rayCandidateProperties = null;
 
@@ -71,14 +66,13 @@ namespace Oculus.Interaction
         {
             base.Awake();
             Selector = _selector as ISelector;
-            _nativeId = 0x52617949746f7220;
         }
 
         protected override void Start()
         {
             base.Start();
-            this.AssertField(Selector, nameof(Selector));
-            this.AssertField(_rayOrigin, nameof(_rayOrigin));
+            Assert.IsNotNull(Selector);
+            Assert.IsNotNull(_rayOrigin);
         }
 
         protected override void DoPreprocess()
@@ -109,15 +103,13 @@ namespace Oculus.Interaction
             RayInteractable closestInteractable = null;
             float closestDist = float.MaxValue;
             Vector3 candidatePosition = Vector3.zero;
-            var interactables = RayInteractable.Registry.List(this);
+            IEnumerable<RayInteractable> interactables = RayInteractable.Registry.List(this);
 
             foreach (RayInteractable interactable in interactables)
             {
                 if (interactable.Raycast(Ray, out SurfaceHit hit, MaxRayLength, false))
                 {
-                    bool equal = Mathf.Abs(hit.Distance - closestDist) < _equalDistanceThreshold;
-                    if ((!equal && hit.Distance < closestDist) ||
-                        (equal && ComputeCandidateTiebreaker(interactable, closestInteractable) > 0))
+                    if (hit.Distance < closestDist)
                     {
                         closestDist = hit.Distance;
                         closestInteractable = interactable;
@@ -133,17 +125,6 @@ namespace Oculus.Interaction
             _rayCandidateProperties = new RayCandidateProperties(closestInteractable, candidatePosition);
 
             return closestInteractable;
-        }
-
-        protected override int ComputeCandidateTiebreaker(RayInteractable a, RayInteractable b)
-        {
-            int result = base.ComputeCandidateTiebreaker(a, b);
-            if (result != 0)
-            {
-                return result;
-            }
-
-            return a.TiebreakerScore.CompareTo(b.TiebreakerScore);
         }
 
         protected override void InteractableSelected(RayInteractable interactable)
@@ -226,7 +207,7 @@ namespace Oculus.Interaction
 
         public void InjectSelector(ISelector selector)
         {
-            _selector = selector as UnityEngine.Object;
+            _selector = selector as MonoBehaviour;
             Selector = selector;
         }
 
@@ -234,12 +215,6 @@ namespace Oculus.Interaction
         {
             _rayOrigin = rayOrigin;
         }
-
-        public void InjectOptionalEqualDistanceThreshold(float equalDistanceThreshold)
-        {
-            _equalDistanceThreshold = equalDistanceThreshold;
-        }
-
         #endregion
     }
 }

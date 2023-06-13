@@ -19,18 +19,16 @@
  */
 
 using System;
-using Meta.WitAi;
-using Meta.WitAi.Configuration;
-using Meta.WitAi.Events;
-using Meta.WitAi.Interfaces;
-using Meta.WitAi.Requests;
+using Facebook.WitAi;
+using Facebook.WitAi.Configuration;
+using Facebook.WitAi.Events;
+using Facebook.WitAi.Interfaces;
 using Oculus.Voice.Core.Bindings.Android;
 using Oculus.Voice.Interfaces;
 using Debug = UnityEngine.Debug;
 
 namespace Oculus.Voice.Bindings.Android
 {
-    // TODO: Fix VoiceSDKImpl to work with IVoiceRequest
     public class VoiceSDKImpl : BaseAndroidConnectionImpl<VoiceSDKBinding>,
         IPlatformVoiceService, IVCBindingEvents
     {
@@ -59,15 +57,6 @@ namespace Oculus.Voice.Bindings.Android
         private VoiceSDKListenerBinding eventBinding;
 
         public ITranscriptionProvider TranscriptionProvider { get; set; }
-        public bool CanActivateAudio()
-        {
-            return true;
-        }
-
-        public bool CanSend()
-        {
-            return true;
-        }
 
         public override void Connect(string version)
         {
@@ -94,32 +83,46 @@ namespace Oculus.Voice.Bindings.Android
             _isActive = false;
         }
 
-        public VoiceServiceRequest Activate(string text, WitRequestOptions requestOptions,
-            VoiceServiceRequestEvents requestEvents)
+        public void Activate(string text)
         {
-            eventBinding.VoiceEvents.OnRequestOptionSetup?.Invoke(requestOptions);
+            service.Activate(text);
+        }
+
+        public void Activate(string text, WitRequestOptions requestOptions)
+        {
             service.Activate(text, requestOptions);
-            return null;
         }
 
-        public VoiceServiceRequest Activate(WitRequestOptions requestOptions,
-            VoiceServiceRequestEvents requestEvents)
+        public void Activate()
         {
-            if (_isActive) return null;
+            if (_isActive) return;
+
             _isActive = true;
-            eventBinding.VoiceEvents.OnRequestOptionSetup?.Invoke(requestOptions);
+            service.Activate();
+        }
+
+        public void Activate(WitRequestOptions requestOptions)
+        {
+            if (_isActive) return;
+
+            _isActive = true;
             service.Activate(requestOptions);
-            return null;
         }
 
-        public VoiceServiceRequest ActivateImmediately(WitRequestOptions requestOptions,
-            VoiceServiceRequestEvents requestEvents)
+        public void ActivateImmediately()
         {
-            if (_isActive) return null;
+            if (_isActive) return;
+
             _isActive = true;
-            eventBinding.VoiceEvents.OnRequestOptionSetup?.Invoke(requestOptions);
+            service.ActivateImmediately();
+        }
+
+        public void ActivateImmediately(WitRequestOptions requestOptions)
+        {
+            if (_isActive) return;
+
+            _isActive = true;
             service.ActivateImmediately(requestOptions);
-            return null;
         }
 
         public void Deactivate()
@@ -134,11 +137,6 @@ namespace Oculus.Voice.Bindings.Android
             service.Deactivate();
         }
 
-        public void DeactivateAndAbortRequest(VoiceServiceRequest request)
-        {
-
-        }
-
         public void OnServiceNotAvailable(string error, string message)
         {
             _isActive = false;
@@ -150,12 +148,6 @@ namespace Oculus.Voice.Bindings.Android
         {
             get => _baseVoiceService.VoiceEvents;
             set => _baseVoiceService.VoiceEvents = value;
-        }
-
-        public TelemetryEvents TelemetryEvents
-        {
-            get => _baseVoiceService.TelemetryEvents;
-            set => _baseVoiceService.TelemetryEvents = value;
         }
     }
 }

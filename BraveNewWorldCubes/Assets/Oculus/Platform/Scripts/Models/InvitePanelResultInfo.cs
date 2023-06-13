@@ -10,7 +10,6 @@ namespace Oculus.Platform.Models
 
   public class InvitePanelResultInfo
   {
-    /// A boolean for whether or not any invites has been sent.
     public readonly bool InvitesSent;
 
 

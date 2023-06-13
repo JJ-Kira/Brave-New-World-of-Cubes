@@ -10,7 +10,6 @@ namespace Oculus.Platform.Models
 
   public class NetSyncSetSessionPropertyResult
   {
-    /// Which session the operation was modifying
     public readonly NetSyncSession Session;
 
 

@@ -23,7 +23,7 @@ using UnityEngine;
 
 namespace Oculus.Interaction.Surfaces
 {
-    public class CylinderSurface : MonoBehaviour, ISurface, IBounds
+    public class CylinderSurface : MonoBehaviour, ISurface
     {
         public enum NormalFacing
         {
@@ -45,19 +45,13 @@ namespace Oculus.Interaction.Surfaces
             Out,
         }
 
-        [Tooltip("The cylinder that will drive this surface.")]
         [SerializeField]
         private Cylinder _cylinder;
 
-        [Tooltip("The normal facing of the surface. Hits will be " +
-            "registered either on the outer or inner face of the cylinder " +
-            "depending on this value.")]
         [SerializeField]
         private NormalFacing _facing = NormalFacing.Out;
 
-        [Tooltip("The height of the cylinder. If zero or " +
-            "negative, height will be infinite.")]
-        [SerializeField]
+        [SerializeField, Tooltip("Height of the cylinder. If zero or negative, height will be infinite.")]
         private float _height = 1f;
 
         public bool IsValid => _cylinder != null && Radius > 0;
@@ -67,19 +61,6 @@ namespace Oculus.Interaction.Surfaces
         public Cylinder Cylinder => _cylinder;
 
         public Transform Transform => _cylinder.transform;
-
-
-        public Bounds Bounds
-        {
-            get
-            {
-                float maxScale = Mathf.Max(Transform.lossyScale.x, 
-                    Mathf.Max(Transform.lossyScale.y, Transform.lossyScale.z));
-                float maxSize = maxScale * (Height + Radius);
-                return new Bounds(Transform.position, 
-                    new Vector3(maxSize, maxSize, maxSize));
-            }
-        }
 
         public NormalFacing Facing
         {
@@ -98,7 +79,7 @@ namespace Oculus.Interaction.Surfaces
         protected virtual void Start()
         {
             this.BeginStart(ref _started);
-            this.AssertField(Cylinder, nameof(Cylinder));
+            Assert.IsNotNull(Cylinder);
             this.EndStart(ref _started);
         }
 

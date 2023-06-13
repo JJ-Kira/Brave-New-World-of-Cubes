@@ -9,7 +9,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace Meta.WitAi.TTS.Samples
+namespace Facebook.WitAi.TTS.Samples
 {
     public class TTSErrorText : MonoBehaviour
     {
@@ -23,10 +23,10 @@ namespace Meta.WitAi.TTS.Samples
         {
             if (TTSService.Instance != null)
             {
-                string invalidError = TTSService.Instance.GetInvalidError();
-                if (!string.Equals(invalidError, _error))
+                string serviceError = TTSService.Instance.IsValid();
+                if (!string.Equals(serviceError, _error))
                 {
-                    _error = invalidError;
+                    _error = serviceError;
                     if (string.IsNullOrEmpty(_error))
                     {
                         _errorLabel.text = string.Empty;

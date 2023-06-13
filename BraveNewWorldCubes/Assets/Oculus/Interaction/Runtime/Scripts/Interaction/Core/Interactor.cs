@@ -21,6 +21,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Assertions;
 
 namespace Oculus.Interaction
 {
@@ -36,27 +37,18 @@ namespace Oculus.Interaction
                                     where TInteractor : Interactor<TInteractor, TInteractable>
                                     where TInteractable : Interactable<TInteractor, TInteractable>
     {
-        #region Oculus Library Variables and Constants
-        private const ulong DefaultNativeId = 0x494e56414c494420;
-        protected ulong _nativeId = DefaultNativeId;
-        #endregion Oculus Library Methods and Constants
-
         [SerializeField, Interface(typeof(IActiveState)), Optional]
-        private UnityEngine.Object _activeState;
+        private MonoBehaviour _activeState;
         private IActiveState ActiveState = null;
 
         [SerializeField, Interface(typeof(IGameObjectFilter)), Optional]
-        private List<UnityEngine.Object> _interactableFilters = new List<UnityEngine.Object>();
+        private List<MonoBehaviour> _interactableFilters = new List<MonoBehaviour>();
         private List<IGameObjectFilter> InteractableFilters = null;
 
-        [SerializeField, Interface(nameof(CandidateTiebreaker)), Optional]
-        private UnityEngine.Object _candidateTiebreaker;
-        private IComparer<TInteractable> CandidateTiebreaker;
-
         private Func<TInteractable> _computeCandidateOverride;
-        private bool _clearComputeCandidateOverrideOnSelect = false;
+        private bool _clearComputeCandidateOverrideOnSelect;
         private Func<bool> _computeShouldSelectOverride;
-        private bool _clearComputeShouldSelectOverrideOnSelect = false;
+        private bool _clearComputeShouldSelectOverrideOnSelect;
         private Func<bool> _computeShouldUnselectOverride;
         private bool _clearComputeShouldUnselectOverrideOnUnselect;
 
@@ -64,7 +56,6 @@ namespace Oculus.Interaction
         protected virtual void DoNormalUpdate() { }
         protected virtual void DoHoverUpdate() { }
         protected virtual void DoSelectUpdate() { }
-        protected virtual void DoPostprocess() { }
 
         public virtual bool ShouldHover
         {
@@ -146,8 +137,7 @@ namespace Oculus.Interaction
 
         private ISelector _selector = null;
 
-        [SerializeField]
-        private int _maxIterationsPerFrame = 3;
+        private int _maxIterationsPerFrame = 10;
         public int MaxIterationsPerFrame
         {
             get
@@ -166,7 +156,6 @@ namespace Oculus.Interaction
             {
                 return _selector;
             }
-
             set
             {
                 if (value != _selector)
@@ -206,13 +195,11 @@ namespace Oculus.Interaction
                 InteractorState previousState = _state;
                 _state = value;
 
-                WhenStateChanged(new InteractorStateChangeArgs(previousState, _state));
-
-                // Update native component
-                if (_nativeId != DefaultNativeId && _state == InteractorState.Select)
+                WhenStateChanged(new InteractorStateChangeArgs
                 {
-                    NativeMethods.isdk_NativeComponent_Activate(_nativeId);
-                }
+                    PreviousState = previousState,
+                    NewState = _state
+                });
             }
         }
 
@@ -265,12 +252,10 @@ namespace Oculus.Interaction
             _whenInteractableUnselected.Invoke(interactable);
         }
 
+        protected virtual void DoPostprocess() { }
+
         private UniqueIdentifier _identifier;
         public int Identifier => _identifier.ID;
-
-        [SerializeField, Optional]
-        private UnityEngine.Object _data = null;
-        public object Data { get; protected set; } = null;
 
         protected bool _started;
 
@@ -278,7 +263,6 @@ namespace Oculus.Interaction
         {
             _identifier = UniqueIdentifier.Generate();
             ActiveState = _activeState as IActiveState;
-            CandidateTiebreaker = _candidateTiebreaker as IComparer<TInteractable>;
             InteractableFilters =
                 _interactableFilters.ConvertAll(mono => mono as IGameObjectFilter);
         }
@@ -286,15 +270,10 @@ namespace Oculus.Interaction
         protected virtual void Start()
         {
             this.BeginStart(ref _started);
-
-            this.AssertCollectionItems(InteractableFilters, nameof(InteractableFilters));
-
-            if (Data == null)
+            foreach (IGameObjectFilter filter in InteractableFilters)
             {
-                _data = this;
-                Data = _data;
+                Assert.IsNotNull(filter);
             }
-
             this.EndStart(ref _started);
         }
 
@@ -464,17 +443,14 @@ namespace Oculus.Interaction
             {
                 return;
             }
-
             if (_clearComputeCandidateOverrideOnSelect)
             {
                 ClearComputeCandidateOverride();
             }
-
             if (_clearComputeShouldSelectOverrideOnSelect)
             {
                 ClearComputeShouldSelectOverride();
             }
-
             while (QueuedSelect)
             {
                 _selectorQueue.Dequeue();
@@ -509,16 +485,6 @@ namespace Oculus.Interaction
 
         // Returns the best interactable for selection or null
         protected abstract TInteractable ComputeCandidate();
-
-        protected virtual int ComputeCandidateTiebreaker(TInteractable a, TInteractable b)
-        {
-            if (CandidateTiebreaker == null)
-            {
-                return 0;
-            }
-
-            return CandidateTiebreaker.Compare(a, b);
-        }
 
         public virtual bool CanSelect(TInteractable interactable)
         {
@@ -594,7 +560,6 @@ namespace Oculus.Interaction
             if (State == InteractorState.Disabled)
             {
                 State = InteractorState.Normal;
-                HandleEnabled();
             }
         }
 
@@ -604,8 +569,6 @@ namespace Oculus.Interaction
             {
                 return;
             }
-
-            HandleDisabled();
 
             if (State == InteractorState.Select)
             {
@@ -624,9 +587,6 @@ namespace Oculus.Interaction
                 State = InteractorState.Disabled;
             }
         }
-
-        protected virtual void HandleEnabled() {}
-        protected virtual void HandleDisabled() {}
 
         protected virtual void HandleSelected()
         {
@@ -731,7 +691,7 @@ namespace Oculus.Interaction
         #region Inject
         public void InjectOptionalActiveState(IActiveState activeState)
         {
-            _activeState = activeState as UnityEngine.Object;
+            _activeState = activeState as MonoBehaviour;
             ActiveState = activeState;
         }
 
@@ -739,21 +699,8 @@ namespace Oculus.Interaction
         {
             InteractableFilters = interactableFilters;
             _interactableFilters = interactableFilters.ConvertAll(interactableFilter =>
-                                    interactableFilter as UnityEngine.Object);
+                                    interactableFilter as MonoBehaviour);
         }
-
-        public void InjectOptionalCandidateTiebreaker(IComparer<TInteractable> candidateTiebreaker)
-        {
-            _candidateTiebreaker = candidateTiebreaker as UnityEngine.Object;
-            CandidateTiebreaker = candidateTiebreaker;
-        }
-
-        public void InjectOptionalData(object data)
-        {
-            _data = data as UnityEngine.Object;
-            Data = data;
-        }
-
         #endregion
     }
 }

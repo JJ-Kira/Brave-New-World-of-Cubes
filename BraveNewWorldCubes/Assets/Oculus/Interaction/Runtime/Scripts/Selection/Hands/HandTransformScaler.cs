@@ -20,18 +20,18 @@
 
 using Oculus.Interaction.Input;
 using UnityEngine;
+using UnityEngine.Assertions;
+using UnityEngine.Serialization;
 
 namespace Oculus.Interaction
 {
     public class HandTransformScaler : MonoBehaviour
     {
         [SerializeField, Interface(typeof(IHand))]
-        private UnityEngine.Object _hand;
+        private MonoBehaviour _hand;
         public IHand Hand { get; private set; }
 
         protected bool _started = false;
-
-        private Vector3 _originalScale = Vector3.one;
 
         protected virtual void Awake()
         {
@@ -41,8 +41,7 @@ namespace Oculus.Interaction
         protected virtual void Start()
         {
             this.BeginStart(ref _started);
-            this.AssertField(Hand, nameof(Hand));
-            _originalScale = this.transform.localScale;
+            Assert.IsNotNull(Hand);
             this.EndStart(ref _started);
         }
 
@@ -64,12 +63,7 @@ namespace Oculus.Interaction
 
         private void HandleHandUpdated()
         {
-            float parentScale = 1f;
-            if (this.transform.parent != null)
-            {
-                parentScale = this.transform.parent.lossyScale.x;
-            }
-            transform.localScale = _originalScale * Hand.Scale / parentScale;
+            transform.localScale = Vector3.one * Hand.Scale;
         }
     }
 }

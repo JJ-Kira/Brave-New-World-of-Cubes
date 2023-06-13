@@ -39,7 +39,7 @@ namespace Oculus.Interaction.Samples
         }
 
         [SerializeField, Interface(typeof(IInteractableView))]
-        private UnityEngine.Object _interactableView;
+        private MonoBehaviour _interactableView;
 
         [Tooltip("Transform to track scale of. If not provided, transform of this component is used.")]
         [SerializeField, Optional]
@@ -152,8 +152,8 @@ namespace Oculus.Interaction.Samples
         protected virtual void Start()
         {
             this.BeginStart(ref _started);
-            this.AssertField(InteractableView, nameof(InteractableView));
-            this.AssertField(TrackedTransform, nameof(TrackedTransform));
+            Assert.IsNotNull(InteractableView);
+            Assert.IsNotNull(TrackedTransform);
             this.EndStart(ref _started);
         }
 

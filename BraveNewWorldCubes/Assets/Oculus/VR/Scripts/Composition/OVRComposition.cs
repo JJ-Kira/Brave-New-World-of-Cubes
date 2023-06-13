@@ -27,94 +27,82 @@ using System.Collections;
 
 #if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_ANDROID
 
-public abstract class OVRComposition
-{
-    public bool cameraInTrackingSpace = false;
-    public OVRCameraRig cameraRig = null;
+public abstract class OVRComposition {
 
-    protected OVRComposition(GameObject parentObject, Camera mainCamera,
-        OVRMixedRealityCaptureConfiguration configuration)
-    {
-        RefreshCameraRig(parentObject, mainCamera);
-    }
+	public bool cameraInTrackingSpace = false;
+	public OVRCameraRig cameraRig = null;
 
-    public abstract OVRManager.CompositionMethod CompositionMethod();
+	protected OVRComposition(GameObject parentObject, Camera mainCamera, OVRMixedRealityCaptureConfiguration configuration) {
+		RefreshCameraRig(parentObject, mainCamera);
+	}
 
-    public abstract void Update(GameObject gameObject, Camera mainCamera,
-        OVRMixedRealityCaptureConfiguration configuration, OVRManager.TrackingOrigin trackingOrigin);
+	public abstract OVRManager.CompositionMethod CompositionMethod();
 
-    public abstract void Cleanup();
+	public abstract void Update(GameObject gameObject, Camera mainCamera, OVRMixedRealityCaptureConfiguration configuration, OVRManager.TrackingOrigin trackingOrigin);
+	public abstract void Cleanup();
 
-    public virtual void RecenterPose()
-    {
-    }
+	public virtual void RecenterPose() { }
 
-    protected bool usingLastAttachedNodePose = false;
+	protected bool usingLastAttachedNodePose = false;
+	protected OVRPose lastAttachedNodePose = new OVRPose();            // Sometimes the attach node pose is not readable (lose tracking, low battery, etc.) Use the last pose instead when it happens
 
-    // Sometimes the attach node pose is not readable (lose tracking, low battery, etc.) Use the last pose instead when it happens
-    protected OVRPose lastAttachedNodePose = new OVRPose();
+	public void RefreshCameraRig(GameObject parentObject, Camera mainCamera)
+	{
+		OVRCameraRig cameraRig = mainCamera.GetComponentInParent<OVRCameraRig>();
+		if (cameraRig == null)
+		{
+			cameraRig = parentObject.GetComponent<OVRCameraRig>();
+		}
+		cameraInTrackingSpace = (cameraRig != null && cameraRig.trackingSpace != null);
+		this.cameraRig = cameraRig;
+		Debug.Log(cameraRig == null ? "[OVRComposition] CameraRig not found" : "[OVRComposition] CameraRig found");
+	}
 
-    public void RefreshCameraRig(GameObject parentObject, Camera mainCamera)
-    {
-        OVRCameraRig cameraRig = mainCamera.GetComponentInParent<OVRCameraRig>();
-        if (cameraRig == null)
-        {
-            cameraRig = parentObject.GetComponent<OVRCameraRig>();
-        }
+	public OVRPose ComputeCameraWorldSpacePose(OVRPlugin.CameraExtrinsics extrinsics, Camera mainCamera)
+	{
+		OVRPose trackingSpacePose = ComputeCameraTrackingSpacePose(extrinsics);
+		OVRPose worldSpacePose = OVRExtensions.ToWorldSpacePose(trackingSpacePose, mainCamera);
+		return worldSpacePose;
+	}
 
-        cameraInTrackingSpace = (cameraRig != null && cameraRig.trackingSpace != null);
-        this.cameraRig = cameraRig;
-        Debug.Log(cameraRig == null ? "[OVRComposition] CameraRig not found" : "[OVRComposition] CameraRig found");
-    }
+	public OVRPose ComputeCameraTrackingSpacePose(OVRPlugin.CameraExtrinsics extrinsics)
+	{
+		OVRPose trackingSpacePose = new OVRPose();
 
-    public OVRPose ComputeCameraWorldSpacePose(OVRPlugin.CameraExtrinsics extrinsics, Camera mainCamera)
-    {
-        OVRPose trackingSpacePose = ComputeCameraTrackingSpacePose(extrinsics);
-        OVRPose worldSpacePose = OVRExtensions.ToWorldSpacePose(trackingSpacePose, mainCamera);
-        return worldSpacePose;
-    }
-
-    public OVRPose ComputeCameraTrackingSpacePose(OVRPlugin.CameraExtrinsics extrinsics)
-    {
-        OVRPose trackingSpacePose = new OVRPose();
-
-        OVRPose cameraTrackingSpacePose = extrinsics.RelativePose.ToOVRPose();
+		OVRPose cameraTrackingSpacePose = extrinsics.RelativePose.ToOVRPose();
 #if OVR_ANDROID_MRC
-        OVRPose stageToLocalPose =
-            OVRPlugin.GetTrackingTransformRelativePose(OVRPlugin.TrackingOrigin.Stage).ToOVRPose();
-        cameraTrackingSpacePose = stageToLocalPose * cameraTrackingSpacePose;
+		OVRPose stageToLocalPose = OVRPlugin.GetTrackingTransformRelativePose(OVRPlugin.TrackingOrigin.Stage).ToOVRPose();
+		cameraTrackingSpacePose = stageToLocalPose * cameraTrackingSpacePose;
 #endif
-        trackingSpacePose = cameraTrackingSpacePose;
+		trackingSpacePose = cameraTrackingSpacePose;
 
-        if (extrinsics.AttachedToNode != OVRPlugin.Node.None && OVRPlugin.GetNodePresent(extrinsics.AttachedToNode))
-        {
-            if (usingLastAttachedNodePose)
-            {
-                Debug.Log("The camera attached node get tracked");
-                usingLastAttachedNodePose = false;
-            }
+		if (extrinsics.AttachedToNode != OVRPlugin.Node.None && OVRPlugin.GetNodePresent(extrinsics.AttachedToNode))
+		{
+			if (usingLastAttachedNodePose)
+			{
+				Debug.Log("The camera attached node get tracked");
+				usingLastAttachedNodePose = false;
+			}
+			OVRPose attachedNodePose = OVRPlugin.GetNodePose(extrinsics.AttachedToNode, OVRPlugin.Step.Render).ToOVRPose();
+			lastAttachedNodePose = attachedNodePose;
+			trackingSpacePose = attachedNodePose * trackingSpacePose;
+		}
+		else
+		{
+			if (extrinsics.AttachedToNode != OVRPlugin.Node.None)
+			{
+				if (!usingLastAttachedNodePose)
+				{
+					Debug.LogWarning("The camera attached node could not be tracked, using the last pose");
+					usingLastAttachedNodePose = true;
+				}
+				trackingSpacePose = lastAttachedNodePose * trackingSpacePose;
+			}
+		}
 
-            OVRPose attachedNodePose =
-                OVRPlugin.GetNodePose(extrinsics.AttachedToNode, OVRPlugin.Step.Render).ToOVRPose();
-            lastAttachedNodePose = attachedNodePose;
-            trackingSpacePose = attachedNodePose * trackingSpacePose;
-        }
-        else
-        {
-            if (extrinsics.AttachedToNode != OVRPlugin.Node.None)
-            {
-                if (!usingLastAttachedNodePose)
-                {
-                    Debug.LogWarning("The camera attached node could not be tracked, using the last pose");
-                    usingLastAttachedNodePose = true;
-                }
+		return trackingSpacePose;
+	}
 
-                trackingSpacePose = lastAttachedNodePose * trackingSpacePose;
-            }
-        }
-
-        return trackingSpacePose;
-    }
 }
 
 #endif

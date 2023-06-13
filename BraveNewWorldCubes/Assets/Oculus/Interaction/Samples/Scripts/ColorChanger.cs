@@ -51,9 +51,9 @@ namespace Oculus.Interaction.Samples
 
         protected virtual void Start()
         {
-            this.AssertField(_target, nameof(_target));
+            Assert.IsNotNull(_target);
             _targetMaterial = _target.material;
-            this.AssertField(_targetMaterial, nameof(_targetMaterial));
+            Assert.IsNotNull(_targetMaterial);
             _savedColor = _targetMaterial.color;
         }
 

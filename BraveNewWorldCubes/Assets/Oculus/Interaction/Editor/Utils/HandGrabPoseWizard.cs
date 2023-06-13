@@ -200,7 +200,7 @@ namespace Oculus.Interaction.HandGrab.Editor
                 return;
             }
 
-            Pose gripPoint = PoseUtils.DeltaScaled(_item.transform, handRoot);
+            Pose gripPoint = _item.transform.Delta(handRoot);
             HandGrabPose point = AddHandGrabPose(trackedHandPose, gripPoint);
             AttachGhost(point);
         }
@@ -240,14 +240,14 @@ namespace Oculus.Interaction.HandGrab.Editor
         /// <returns>The generated HandGrabPose.</returns>
         private HandGrabPose AddHandGrabPose(HandPose rawPose, Pose snapPoint)
         {
-            HandGrabInteractable interactable = HandGrabUtils.CreateHandGrabInteractable(_item.transform);
-            var pointData = new HandGrabUtils.HandGrabPoseData()
+            HandGrabInteractable interactable = HandGrabInteractable.Create(_item.transform);
+            HandGrabPoseData pointData = new HandGrabPoseData()
             {
                 handPose = rawPose,
-                scale = Hand.Scale / interactable.RelativeTo.lossyScale.x,
+                scale = 1f,
                 gripPose = snapPoint,
             };
-            return HandGrabUtils.LoadHandGrabPose(interactable, pointData);
+            return interactable.LoadHandGrabPose(pointData);
         }
 
         /// <summary>
@@ -256,10 +256,10 @@ namespace Oculus.Interaction.HandGrab.Editor
         /// </summary>
         /// <param name="data">The data of the HandGrabInteractable.</param>
         /// <returns>The generated HandGrabInteractable.</returns>
-        private HandGrabInteractable LoadHandGrabInteractable(HandGrabUtils.HandGrabInteractableData data)
+        private HandGrabInteractable LoadHandGrabInteractable(HandGrabInteractableData data)
         {
-            HandGrabInteractable interactable = HandGrabUtils.CreateHandGrabInteractable(_item.transform);
-            HandGrabUtils.LoadData(interactable, data);
+            HandGrabInteractable interactable = HandGrabInteractable.Create(_item.transform);
+            interactable.LoadData(data);
             return interactable;
         }
 
@@ -275,10 +275,10 @@ namespace Oculus.Interaction.HandGrab.Editor
             {
                 GenerateCollectionAsset();
             }
-            var savedPoses = new List<HandGrabUtils.HandGrabInteractableData>();
+            List<HandGrabInteractableData> savedPoses = new List<HandGrabInteractableData>();
             foreach (HandGrabInteractable snap in _item.GetComponentsInChildren<HandGrabInteractable>(false))
             {
-                savedPoses.Add(HandGrabUtils.SaveData(snap));
+                savedPoses.Add(snap.SaveData());
             }
             _posesCollection.StoreInteractables(savedPoses);
         }
@@ -294,7 +294,7 @@ namespace Oculus.Interaction.HandGrab.Editor
                 return;
             }
 
-            foreach (var handPose in _posesCollection.InteractablesData)
+            foreach (HandGrabInteractableData handPose in _posesCollection.InteractablesData)
             {
                 LoadHandGrabInteractable(handPose);
             }

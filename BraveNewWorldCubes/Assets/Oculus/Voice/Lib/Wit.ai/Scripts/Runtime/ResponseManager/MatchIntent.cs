@@ -9,7 +9,7 @@
 using System;
 using Meta.Conduit;
 
-namespace Meta.WitAi
+namespace Facebook.WitAi
 {
     /// <summary>
     /// Triggers a method to be executed if it matches a voice command's intent

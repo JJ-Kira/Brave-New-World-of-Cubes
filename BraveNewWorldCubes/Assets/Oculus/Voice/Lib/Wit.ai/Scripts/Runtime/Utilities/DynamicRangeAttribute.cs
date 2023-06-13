@@ -8,7 +8,7 @@
 
 using UnityEngine;
 
-namespace Meta.WitAi.Utilities
+namespace Facebook.WitAi.Utilities
 {
     public class DynamicRangeAttribute : PropertyAttribute
     {

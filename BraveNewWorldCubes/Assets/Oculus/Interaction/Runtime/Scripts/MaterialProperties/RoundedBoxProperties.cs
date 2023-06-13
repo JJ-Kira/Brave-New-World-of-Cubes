@@ -70,7 +70,6 @@ namespace Oculus.Interaction
             set
             {
                 _width = value;
-                UpdateSize();
             }
         }
 
@@ -83,7 +82,6 @@ namespace Oculus.Interaction
             set
             {
                 _height = value;
-                UpdateSize();
             }
         }
 
@@ -180,7 +178,6 @@ namespace Oculus.Interaction
             set
             {
                 _borderOuterRadius = value;
-                UpdateSize();
             }
         }
 
@@ -199,7 +196,7 @@ namespace Oculus.Interaction
 
         protected virtual void Start()
         {
-            this.AssertField(_editor, nameof(_editor));
+            Assert.IsNotNull(_editor);
             UpdateSize();
             UpdateMaterialPropertyBlock();
         }
@@ -209,7 +206,6 @@ namespace Oculus.Interaction
             transform.localScale = new Vector3(_width + _borderOuterRadius * 2,
                                                _height + _borderOuterRadius * 2,
                                                1.0f);
-            UpdateMaterialPropertyBlock();
         }
 
         private void UpdateMaterialPropertyBlock()

@@ -8,7 +8,7 @@
 
 
 using System;
-namespace Meta.WitAi.Events
+namespace Facebook.WitAi.Events
 {
     [Flags]
     public enum VoiceState

@@ -10,7 +10,6 @@ namespace Oculus.Platform.Models
 
   public class AbuseReportRecording
   {
-    /// A UUID associated with the Abuse Report recording.
     public readonly string RecordingUuid;
 
 

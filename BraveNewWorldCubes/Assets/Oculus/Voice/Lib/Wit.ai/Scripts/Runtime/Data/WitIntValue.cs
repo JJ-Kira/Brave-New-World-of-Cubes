@@ -6,9 +6,9 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-using Meta.WitAi.Json;
+using Facebook.WitAi.Lib;
 
-namespace Meta.WitAi.Data
+namespace Facebook.WitAi.Data
 {
     public class WitIntValue : WitValue
     {

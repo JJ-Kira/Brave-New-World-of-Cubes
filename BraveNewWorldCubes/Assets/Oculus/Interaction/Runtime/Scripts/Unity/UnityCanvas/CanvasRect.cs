@@ -71,9 +71,9 @@ namespace Oculus.Interaction.UnityCanvas
 
         #region Inject
 
-        public void InjectAllCanvasRect(CanvasRenderTexture canvasRenderTexture, MeshFilter meshFilter)
+        public void InjectAllCanvasRect(CanvasRenderTexture canvasRenderTexture)
         {
-            InjectAllCanvasMesh(canvasRenderTexture, meshFilter);
+            InjectAllCanvasMesh(canvasRenderTexture);
         }
 
         #endregion

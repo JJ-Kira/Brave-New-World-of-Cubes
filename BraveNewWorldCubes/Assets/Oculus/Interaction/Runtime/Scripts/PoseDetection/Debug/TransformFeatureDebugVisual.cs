@@ -52,8 +52,8 @@ namespace Oculus.Interaction.PoseDetection.Debug
         protected virtual void Awake()
         {
             _material = _target.material;
-            this.AssertField(_material, nameof(_material));
-            this.AssertField(_targetText, nameof(_targetText));
+            Assert.IsNotNull(_material);
+            Assert.IsNotNull(_targetText);
 
             _material.color = _lastActiveValue ? _activeColor : _normalColor;
         }

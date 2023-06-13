@@ -18,41 +18,25 @@
  * limitations under the License.
  */
 
-using Oculus.Interaction.Surfaces;
 using UnityEngine;
+using UnityEngine.Assertions;
+using Oculus.Interaction.Surfaces;
 
 namespace Oculus.Interaction
 {
     public class RayInteractable : PointerInteractable<RayInteractor, RayInteractable>
     {
         [SerializeField, Interface(typeof(ISurface))]
-        private UnityEngine.Object _surface;
+        private MonoBehaviour _surface;
         public ISurface Surface { get; private set; }
 
         [SerializeField, Optional, Interface(typeof(ISurface))]
-        private UnityEngine.Object _selectSurface = null;
+        private MonoBehaviour _selectSurface = null;
         private ISurface SelectSurface;
 
         [SerializeField, Optional, Interface(typeof(IMovementProvider))]
-        private UnityEngine.Object _movementProvider;
+        private MonoBehaviour _movementProvider;
         private IMovementProvider MovementProvider { get; set; }
-
-        [SerializeField, Optional]
-        private int _tiebreakerScore = 0;
-
-        #region Properties
-        public int TiebreakerScore
-        {
-            get
-            {
-                return _tiebreakerScore;
-            }
-            set
-            {
-                _tiebreakerScore = value;
-            }
-        }
-        #endregion
 
         protected override void Awake()
         {
@@ -65,10 +49,10 @@ namespace Oculus.Interaction
         protected override void Start()
         {
             this.BeginStart(ref _started, () => base.Start());
-            this.AssertField(Surface, nameof(Surface));
+            Assert.IsNotNull(Surface);
             if (_selectSurface != null)
             {
-                this.AssertField(SelectSurface, nameof(SelectSurface));
+                Assert.IsNotNull(SelectSurface);
             }
             else
             {
@@ -107,21 +91,20 @@ namespace Oculus.Interaction
         public void InjectSurface(ISurface surface)
         {
             Surface = surface;
-            _surface = surface as UnityEngine.Object;
+            _surface = surface as MonoBehaviour;
         }
 
         public void InjectOptionalSelectSurface(ISurface surface)
         {
             SelectSurface = surface;
-            _selectSurface = surface as UnityEngine.Object;
+            _selectSurface = surface as MonoBehaviour;
         }
 
         public void InjectOptionalMovementProvider(IMovementProvider provider)
         {
-            _movementProvider = provider as UnityEngine.Object;
+            _movementProvider = provider as MonoBehaviour;
             MovementProvider = provider;
         }
-
         #endregion
     }
 }

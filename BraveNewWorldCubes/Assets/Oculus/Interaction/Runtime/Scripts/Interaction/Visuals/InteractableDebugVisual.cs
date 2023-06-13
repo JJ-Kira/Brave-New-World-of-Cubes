@@ -27,7 +27,7 @@ namespace Oculus.Interaction
     public class InteractableDebugVisual : MonoBehaviour
     {
         [SerializeField, Interface(typeof(IInteractableView))]
-        private UnityEngine.Object _interactableView;
+        private MonoBehaviour _interactableView;
 
         [SerializeField]
         private Renderer _renderer;
@@ -106,8 +106,9 @@ namespace Oculus.Interaction
         protected virtual void Start()
         {
             this.BeginStart(ref _started);
-            this.AssertField(InteractableView, nameof(InteractableView));
-            this.AssertField(_renderer, nameof(_renderer));
+            Assert.IsNotNull(InteractableView);
+
+            Assert.IsNotNull(_renderer);
             _material = _renderer.material;
 
             UpdateVisual();
@@ -173,7 +174,7 @@ namespace Oculus.Interaction
 
         public void InjectInteractableView(IInteractableView interactableView)
         {
-            _interactableView = interactableView as UnityEngine.Object;
+            _interactableView = interactableView as MonoBehaviour;
             InteractableView = interactableView;
         }
 

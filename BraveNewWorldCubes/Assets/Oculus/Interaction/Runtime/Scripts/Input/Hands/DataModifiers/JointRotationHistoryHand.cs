@@ -92,9 +92,9 @@ namespace Oculus.Interaction.Input
 
         public void InjectAllJointHistoryHand(UpdateModeFlags updateMode, IDataSource updateAfter,
             DataModifier<HandDataAsset> modifyDataFromSource, bool applyModifier,
-            int historyLength, int historyOffset)
+            Component[] aspects, int historyLength, int historyOffset)
         {
-            base.InjectAllHand(updateMode, updateAfter, modifyDataFromSource, applyModifier);
+            base.InjectAllHand(updateMode, updateAfter, modifyDataFromSource, applyModifier, aspects);
             InjectHistoryLength(historyLength);
             SetHistoryOffset(historyOffset);
         }

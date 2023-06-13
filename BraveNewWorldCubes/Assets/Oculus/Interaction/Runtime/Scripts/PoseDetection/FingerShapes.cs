@@ -21,22 +21,16 @@
 using Oculus.Interaction.Input;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace Oculus.Interaction.PoseDetection
 {
     public enum FingerFeature
     {
-        [Tooltip(FingerFeatureProperties.FeatureCurlShortHelpText)]
         Curl,
-
-        [Tooltip(FingerFeatureProperties.FeatureFlexionShortHelpText)]
         Flexion,
-
-        [Tooltip(FingerFeatureProperties.FeatureAbductionShortHelpText)]
         Abduction,
-
-        [Tooltip(FingerFeatureProperties.FeatureOppositionShortHelpText)]
         Opposition
     }
 

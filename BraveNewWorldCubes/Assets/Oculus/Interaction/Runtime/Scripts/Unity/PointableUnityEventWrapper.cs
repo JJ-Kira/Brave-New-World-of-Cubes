@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (c) Meta Platforms, Inc. and affiliates.
  * All rights reserved.
  *
@@ -33,7 +33,7 @@ namespace Oculus.Interaction
     public class PointableUnityEventWrapper : MonoBehaviour
     {
         [SerializeField, Interface(typeof(IPointable))]
-        private UnityEngine.Object _pointable;
+        private MonoBehaviour _pointable;
         private IPointable Pointable;
 
         private HashSet<int> _pointers;
@@ -73,7 +73,7 @@ namespace Oculus.Interaction
         protected virtual void Start()
         {
             this.BeginStart(ref _started);
-            this.AssertField(Pointable, nameof(Pointable));
+            Assert.IsNotNull(Pointable);
             _pointers = new HashSet<int>();
             this.EndStart(ref _started);
         }
@@ -135,7 +135,7 @@ namespace Oculus.Interaction
 
         public void InjectPointable(IPointable pointable)
         {
-            _pointable = pointable as UnityEngine.Object;
+            _pointable = pointable as MonoBehaviour;
             Pointable = pointable;
         }
 

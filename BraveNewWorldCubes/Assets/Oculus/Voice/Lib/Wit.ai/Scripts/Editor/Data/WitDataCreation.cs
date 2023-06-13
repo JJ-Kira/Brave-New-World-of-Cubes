@@ -8,13 +8,13 @@
 
 using System.Globalization;
 using System.Text.RegularExpressions;
-using Meta.WitAi.Configuration;
-using Meta.WitAi.Data.Configuration;
+using Facebook.WitAi.Configuration;
+using Facebook.WitAi.Data.Configuration;
 using UnityEditor;
 using UnityEngine;
 
 
-namespace Meta.WitAi.Data
+namespace Facebook.WitAi.Data
 {
     public class WitDataCreation
     {
@@ -84,14 +84,13 @@ namespace Meta.WitAi.Data
                 name = asset.GetType().Name;
             }
 
-            var filePath = EditorUtility.SaveFilePanelInProject(label, name, "asset", "Please select a location for your asset.");
+            var filePath = EditorUtility.SaveFilePanel(label, saveDir, name, "asset");
             if (!string.IsNullOrEmpty(filePath))
             {
                 EditorPrefs.SetString(PATH_KEY, filePath);
-                if (filePath.StartsWith("Assets/StreamingAssets"))
+                if (filePath.StartsWith(Application.dataPath))
                 {
-                    EditorUtility.DisplayDialog("Restricted Folder","Cannot use StreamingAssets folder for saving normal assets. \nPlease select another folder inside Assets.", "OK");
-                    return;
+                    filePath = filePath.Substring(Application.dataPath.Length - 6);
                 }
                 AssetDatabase.CreateAsset(asset, filePath);
                 AssetDatabase.SaveAssets();

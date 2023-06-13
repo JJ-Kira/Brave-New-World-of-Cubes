@@ -9,129 +9,77 @@
 using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
-using Meta.WitAi.Attributes;
-using Meta.WitAi.Data;
-using Meta.WitAi.Json;
-using Meta.WitAi.Utilities;
+using Facebook.WitAi.Data;
+using Facebook.WitAi.Lib;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.Serialization;
 
-namespace Meta.WitAi.CallbackHandlers
+namespace Facebook.WitAi.CallbackHandlers
 {
     [AddComponentMenu("Wit.ai/Response Matchers/Response Matcher")]
-    public class WitResponseMatcher : WitIntentMatcher
+    public class WitResponseMatcher : WitResponseHandler
     {
+        [Header("Intent")]
+        [SerializeField] public string intent;
+        [FormerlySerializedAs("confidence")]
+        [Range(0, 1f), SerializeField] public float confidenceThreshold = .6f;
+
         [FormerlySerializedAs("valuePaths")]
         [Header("Value Matching")]
-#if UNITY_2021_3_2 || UNITY_2021_3_3 || UNITY_2021_3_4 || UNITY_2021_3_5
-        [NonReorderable]
-#endif
         [SerializeField] public ValuePathMatcher[] valueMatchers;
 
         [Header("Output")]
-#if UNITY_2021_3_2 || UNITY_2021_3_3 || UNITY_2021_3_4 || UNITY_2021_3_5
-        [NonReorderable]
-#endif
         [SerializeField] private FormattedValueEvents[] formattedValueEvents;
         [SerializeField] private MultiValueEvent onMultiValueEvent = new MultiValueEvent();
 
-        [TooltipBox("Triggered if the matching conditions did not match. The parameter will be the transcription that was received. This will only trigger if there were values for intents or entities, but those values didn't match this matcher.")]
-        [SerializeField] private StringEvent onDidNotMatch = new StringEvent();
-
-        [TooltipBox("Triggered if a request was checked and no intents were found. This will still trigger if entities match and only applies to intents. The parameter will be the transcription.")]
-        [SerializeField] private StringEvent onOutOfDomain = new StringEvent();
-
         private static Regex valueRegex = new Regex(Regex.Escape("{value}"), RegexOptions.Compiled);
 
-        // Handle validation
-        protected override string OnValidateResponse(WitResponseNode response, bool isEarlyResponse)
+        protected override void OnHandleResponse(WitResponseNode response)
         {
-            // Return base
-            string result = base.OnValidateResponse(response, isEarlyResponse);
-            if (!string.IsNullOrEmpty(result))
+            if (IntentMatches(response))
             {
-                return result;
-            }
-            // Only check value matches on early
-            if (isEarlyResponse && !ValueMatches(response))
-            {
-                return "No value matches";
-            }
-            // Success
-            return string.Empty;
-        }
-        // Ignore for mismatched intent
-        protected override void OnResponseInvalid(WitResponseNode response, string error)
-        {
-            if (response.GetIntents().Length > 0 || response.EntityCount() > 0)
-            {
-                onDidNotMatch?.Invoke(response.GetTranscription());
-            }
-
-            if (response.GetIntents().Length == 0)
-            {
-                onOutOfDomain?.Invoke(response.GetTranscription());
-            }
-        }
-        // Handle valid callback
-        protected override void OnResponseSuccess(WitResponseNode response)
-        {
-            // Check value matches
-            if (ValueMatches(response))
-            {
-                for (int j = 0; j < formattedValueEvents.Length; j++)
+                if (ValueMatches(response))
                 {
-                    var formatEvent = formattedValueEvents[j];
-                    var result = formatEvent.format;
-                    for (int i = 0; i < valueMatchers.Length; i++)
+                    for (int j = 0; j < formattedValueEvents.Length; j++)
                     {
-                        var reference = valueMatchers[i].Reference;
-                        var value = reference.GetStringValue(response);
-                        if (!string.IsNullOrEmpty(formatEvent.format))
+                        var formatEvent = formattedValueEvents[j];
+                        var result = formatEvent.format;
+                        for (int i = 0; i < valueMatchers.Length; i++)
                         {
-                            if (!string.IsNullOrEmpty(value))
+                            var reference = valueMatchers[i].Reference;
+                            var value = reference.GetStringValue(response);
+                            if (!string.IsNullOrEmpty(formatEvent.format))
                             {
-                                result = valueRegex.Replace(result, value, 1);
-                                result = result.Replace("{" + i + "}", value);
-                            }
-                            else if (result.Contains("{" + i + "}"))
-                            {
-                                result = "";
-                                break;
+                                if (!string.IsNullOrEmpty(value))
+                                {
+                                    result = valueRegex.Replace(result, value, 1);
+                                    result = result.Replace("{" + i + "}", value);
+                                }
+                                else if (result.Contains("{" + i + "}"))
+                                {
+                                    result = "";
+                                    break;
+                                }
                             }
                         }
-                    }
 
-                    if (!string.IsNullOrEmpty(result))
-                    {
-                        formatEvent.onFormattedValueEvent?.Invoke(result);
+                        if (!string.IsNullOrEmpty(result))
+                        {
+                            formatEvent.onFormattedValueEvent?.Invoke(result);
+                        }
                     }
                 }
-            }
-            else
-            {
-                onDidNotMatch?.Invoke(response.GetTranscription());
-            }
 
-            // Get all values & perform multi value event
-            List<string> values = new List<string>();
-            foreach (var matcher in valueMatchers)
-            {
-                // Add value
-                var value = matcher.Reference.GetStringValue(response);
-                values.Add(value);
-
-                // Refresh confidence
-                if (matcher.ConfidenceReference != null)
+                List<string> values = new List<string>();
+                for (int i = 0; i < valueMatchers.Length; i++)
                 {
-                    float confidenceValue = ValueMatches(response, matcher)
-                        ? matcher.ConfidenceReference.GetFloatValue(response)
-                        : 0f;
-                    RefreshConfidenceRange(confidenceValue, matcher.confidenceRanges, matcher.allowConfidenceOverlap);
+                    var value = valueMatchers[i].Reference.GetStringValue(response);
+                    values.Add(value);
                 }
+
+                onMultiValueEvent.Invoke(values.ToArray());
             }
-            onMultiValueEvent.Invoke(values.ToArray());
         }
 
         private bool ValueMatches(WitResponseNode response)
@@ -139,34 +87,31 @@ namespace Meta.WitAi.CallbackHandlers
             bool matches = true;
             for (int i = 0; i < valueMatchers.Length && matches; i++)
             {
-                matches &= ValueMatches(response, valueMatchers[i]);
-            }
-            return matches;
-        }
+                var matcher = valueMatchers[i];
+                var value = matcher.Reference.GetStringValue(response);
+                matches &= !matcher.contentRequired || !string.IsNullOrEmpty(value);
 
-        private bool ValueMatches(WitResponseNode response, ValuePathMatcher matcher)
-        {
-            var value = matcher.Reference.GetStringValue(response);
-            bool result = !matcher.contentRequired || !string.IsNullOrEmpty(value);
-            switch (matcher.matchMethod)
-            {
-                case MatchMethod.RegularExpression:
-                    result &= Regex.Match(value, matcher.matchValue).Success;
-                    break;
-                case MatchMethod.Text:
-                    result &= value == matcher.matchValue;
-                    break;
-                case MatchMethod.IntegerComparison:
-                    result &= CompareInt(value, matcher);
-                    break;
-                case MatchMethod.FloatComparison:
-                    result &= CompareFloat(value, matcher);
-                    break;
-                case MatchMethod.DoubleComparison:
-                    result &= CompareDouble(value, matcher);
-                    break;
+                switch (matcher.matchMethod)
+                {
+                    case MatchMethod.RegularExpression:
+                        matches &= Regex.Match(value, matcher.matchValue).Success;
+                        break;
+                    case MatchMethod.Text:
+                        matches &= value == matcher.matchValue;
+                        break;
+                    case MatchMethod.IntegerComparison:
+                        matches &= CompareInt(value, matcher);
+                        break;
+                    case MatchMethod.FloatComparison:
+                        matches &= CompareFloat(value, matcher);
+                        break;
+                    case MatchMethod.DoubleComparison:
+                        matches &= CompareDouble(value, matcher);
+                        break;
+                }
             }
-            return result;
+
+            return matches;
         }
 
         private bool CompareDouble(string value, ValuePathMatcher matcher)
@@ -257,6 +202,28 @@ namespace Meta.WitAi.CallbackHandlers
 
             return false;
         }
+
+        private bool IntentMatches(WitResponseNode response)
+        {
+            var intentNode = response.GetFirstIntent();
+            if (string.IsNullOrEmpty(intent))
+            {
+                return true;
+            }
+
+            if (intent == intentNode["name"].Value)
+            {
+                var actualConfidence = intentNode["confidence"].AsFloat;
+                if (actualConfidence >= confidenceThreshold)
+                {
+                    return true;
+                }
+
+                Debug.Log($"{intent} matched, but confidence ({actualConfidence.ToString("F")}) was below threshold ({confidenceThreshold.ToString("F")})");
+            }
+
+            return false;
+        }
     }
 
     [Serializable]
@@ -295,8 +262,6 @@ namespace Meta.WitAi.CallbackHandlers
         [Tooltip("The variance allowed when comparing two floating point values for equality")]
         public double floatingPointComparisonTolerance = .0001f;
 
-        [Tooltip("Confidence ranges are executed in order. If checked, all confidence values will be checked instead of stopping on the first one that matches.")]
-        [SerializeField] public bool allowConfidenceOverlap;
         [Tooltip("The confidence levels to handle for this value.\nNOTE: The selected node must have a confidence sibling node.")]
         public ConfidenceRange[] confidenceRanges;
 

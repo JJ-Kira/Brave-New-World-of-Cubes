@@ -31,7 +31,7 @@ namespace Oculus.Interaction.Input
     public class ControllerRef : MonoBehaviour, IController, IActiveState
     {
         [SerializeField, Interface(typeof(IController))]
-        private UnityEngine.Object _controller;
+        private MonoBehaviour _controller;
         private IController Controller;
 
         protected virtual void Awake()
@@ -41,7 +41,7 @@ namespace Oculus.Interaction.Input
 
         protected virtual void Start()
         {
-            this.AssertField(Controller, nameof(Controller));
+            Assert.IsNotNull(Controller);
         }
 
         public Handedness Handedness => Controller.Handedness;
@@ -50,10 +50,10 @@ namespace Oculus.Interaction.Input
 
         public bool IsPoseValid => Controller.IsPoseValid;
 
-        public event Action WhenUpdated
+        public event Action ControllerUpdated
         {
-            add => Controller.WhenUpdated += value;
-            remove => Controller.WhenUpdated -= value;
+            add => Controller.ControllerUpdated += value;
+            remove => Controller.ControllerUpdated -= value;
         }
 
         public bool Active => IsConnected;
@@ -67,8 +67,6 @@ namespace Oculus.Interaction.Input
         {
             return Controller.TryGetPointerPose(out pose);
         }
-
-        public float Scale => Controller.Scale;
 
         public bool IsButtonUsageAnyActive(ControllerButtonUsage buttonUsage)
         {
@@ -88,10 +86,9 @@ namespace Oculus.Interaction.Input
 
         public void InjectController(IController controller)
         {
-            _controller = controller as UnityEngine.Object;
+            _controller = controller as MonoBehaviour;
             Controller = controller;
         }
-
         #endregion
     }
 }

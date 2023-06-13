@@ -19,27 +19,22 @@
  */
 
 using UnityEngine;
+using UnityEngine.Assertions;
 
 namespace Oculus.Interaction.PoseDetection.Debug
 {
     public class ActiveStateDebugVisual : MonoBehaviour
     {
-        [Tooltip("The IActiveState to debug.")]
         [SerializeField, Interface(typeof(IActiveState))]
-        private UnityEngine.Object _activeState;
+        private MonoBehaviour _activeState;
         private IActiveState ActiveState { get; set; }
 
-        [Tooltip("The renderer used for the color change.")]
         [SerializeField]
         private Renderer _target;
 
-        [Tooltip("The renderer will be set to this color " +
-            "when ActiveState is inactive.")]
         [SerializeField]
         private Color _normalColor = Color.red;
 
-        [Tooltip("The renderer will be set to this color " +
-            "when ActiveState is active.")]
         [SerializeField]
         private Color _activeColor = Color.green;
 
@@ -49,8 +44,8 @@ namespace Oculus.Interaction.PoseDetection.Debug
         protected virtual void Awake()
         {
             ActiveState = _activeState as IActiveState;
-            this.AssertField(ActiveState, nameof(ActiveState));
-            this.AssertField(_target, nameof(_target));
+            Assert.IsNotNull(ActiveState);
+            Assert.IsNotNull(_target);
             _material = _target.material;
 
             SetMaterialColor(_lastActiveValue ? _activeColor : _normalColor);

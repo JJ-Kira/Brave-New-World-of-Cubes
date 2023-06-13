@@ -58,14 +58,7 @@ namespace Oculus.Interaction.Input
             }
         }
 
-        public event Action WhenUpdated = delegate { };
-
-        private ITrackingToWorldTransformer TrackingToWorldTransformer =>
-            GetData().Config.TrackingToWorldTransformer;
-
-        public float Scale => TrackingToWorldTransformer != null
-            ? TrackingToWorldTransformer.Transform.lossyScale.x
-            : 1;
+        public event Action ControllerUpdated = delegate { };
 
         public bool IsButtonUsageAnyActive(ControllerButtonUsage buttonUsage)
         {
@@ -122,7 +115,7 @@ namespace Oculus.Interaction.Input
 
             if (Started)
             {
-                WhenUpdated();
+                ControllerUpdated();
             }
         }
 
@@ -130,9 +123,5 @@ namespace Oculus.Interaction.Input
         {
             // Default implementation does nothing, to allow instantiation of this modifier directly
         }
-
-        #region Inject
-
-        #endregion
     }
 }

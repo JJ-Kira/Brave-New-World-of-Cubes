@@ -26,11 +26,11 @@ using UnityEngine.Assertions;
 
 namespace Oculus.Interaction
 {
-    public class HandVisual : MonoBehaviour, IHandVisual
+    public class HandVisual : MonoBehaviour
     {
         [SerializeField, Interface(typeof(IHand))]
-        private UnityEngine.Object _hand;
-        public IHand Hand { get; private set; }
+        private MonoBehaviour _hand;
+        public IHand Hand;
 
         [SerializeField]
         private SkinnedMeshRenderer _skinnedMeshRenderer;
@@ -56,7 +56,7 @@ namespace Oculus.Interaction
 
         private int _wristScalePropertyId;
 
-        public IList<Transform> Joints => _jointTransforms;
+        public List<Transform> Joints => _jointTransforms;
 
         public bool ForceOffVisibility { get; set; }
 
@@ -74,8 +74,8 @@ namespace Oculus.Interaction
         protected virtual void Start()
         {
             this.BeginStart(ref _started);
-            this.AssertField(Hand, nameof(Hand));
-            this.AssertField(_skinnedMeshRenderer, nameof(_skinnedMeshRenderer));
+            Assert.IsNotNull(Hand);
+            Assert.IsNotNull(_skinnedMeshRenderer);
             if (_handMaterialPropertyBlockEditor != null)
             {
                 _wristScalePropertyId = Shader.PropertyToID("_WristScale");
@@ -134,8 +134,7 @@ namespace Oculus.Interaction
             {
                 if (_root != null)
                 {
-                    float parentScale = _root.parent != null ? _root.parent.lossyScale.x : 1f;
-                    _root.localScale = Hand.Scale / parentScale * Vector3.one;
+                    _root.localScale = new Vector3(Hand.Scale, Hand.Scale, Hand.Scale);
                 }
             }
 
@@ -165,11 +164,6 @@ namespace Oculus.Interaction
             return _jointTransforms[(int)handJointId];
         }
 
-        public Pose GetJointPose(HandJointId jointId, Space space)
-        {
-            return GetTransformByHandJointId(jointId).GetPose(space);
-        }
-
         #region Inject
 
         public void InjectAllHandSkeletonVisual(IHand hand, SkinnedMeshRenderer skinnedMeshRenderer)
@@ -180,7 +174,7 @@ namespace Oculus.Interaction
 
         public void InjectHand(IHand hand)
         {
-            _hand = hand as UnityEngine.Object;
+            _hand = hand as MonoBehaviour;
             Hand = hand;
         }
 
@@ -208,7 +202,6 @@ namespace Oculus.Interaction
         {
             _handMaterialPropertyBlockEditor = editor;
         }
-
         #endregion
     }
 }

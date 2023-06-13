@@ -8,7 +8,6 @@
 
 using System.Collections.Generic;
 using System.Linq;
-using Meta.WitAi.Json;
 
 namespace Meta.Conduit
 {
@@ -28,10 +27,10 @@ namespace Meta.Conduit
         /// </summary>
         public string Name
         {
-            get => _name;
-            set => _name = ConduitUtilities.DelimitWithUnderscores(value);
+            get => name;
+            set => name = ConduitUtilities.DelimitWithUnderscores(value).ToLower();
         }
-        private string _name;
+        private string name;
 
         /// <summary>
         /// This is the technical name of the parameter in the actual method in codebase.
@@ -53,7 +52,7 @@ namespace Meta.Conduit
                 var lastPeriod = QualifiedTypeName.LastIndexOf('.');
                 if (lastPeriod < 0)
                 {
-                    return QualifiedTypeName;
+                    return string.Empty;
                 }
                 var entityName = QualifiedTypeName.Substring(lastPeriod + 1);
 
@@ -83,11 +82,6 @@ namespace Meta.Conduit
         /// Additional names by which the backend can refer to this parameter.
         /// </summary>
         public List<string> Aliases { get; set; }
-        
-        /// <summary>
-        /// Example values this parameter can accept.
-        /// </summary>
-        public List<string> Examples { get; set; }
 
         public override bool Equals(object obj)
         {
@@ -97,7 +91,7 @@ namespace Meta.Conduit
         public override int GetHashCode()
         {
             var hash = 17;
-            hash = hash * 31 + _name.GetHashCode();
+            hash = hash * 31 + name.GetHashCode();
             hash = hash * 31 + InternalName.GetHashCode();
             hash = hash * 31 + QualifiedName.GetHashCode();
             hash = hash * 31 + TypeAssembly.GetHashCode();

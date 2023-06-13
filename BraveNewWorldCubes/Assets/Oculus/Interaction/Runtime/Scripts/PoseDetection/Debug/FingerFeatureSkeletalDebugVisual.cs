@@ -28,9 +28,6 @@ namespace Oculus.Interaction.PoseDetection.Debug
     public class FingerFeatureSkeletalDebugVisual : MonoBehaviour
     {
         [SerializeField]
-        private FingerFeatureStateProvider _fingerFeatureStateProvider;
-
-        [SerializeField]
         private LineRenderer _lineRenderer;
 
         [SerializeField]
@@ -43,6 +40,7 @@ namespace Oculus.Interaction.PoseDetection.Debug
         private float _lineWidth = 0.005f;
 
         private IHand _hand;
+        private FingerFeatureStateProvider _featureState;
 
         private bool _lastFeatureActiveValue = false;
 
@@ -54,7 +52,7 @@ namespace Oculus.Interaction.PoseDetection.Debug
 
         protected virtual void Awake()
         {
-            this.AssertField(_lineRenderer, nameof(_lineRenderer));
+            Assert.IsNotNull(_lineRenderer);
             UpdateFeatureActiveValueAndVisual(false);
         }
 
@@ -74,9 +72,10 @@ namespace Oculus.Interaction.PoseDetection.Debug
             _hand = hand;
             _initialized = true;
 
-            this.AssertField(_fingerFeatureStateProvider, nameof(_fingerFeatureStateProvider));
+            bool foundAspect = hand.GetHandAspect(out _featureState);
+            Assert.IsTrue(foundAspect);
 
-            var featureValueProvider = _fingerFeatureStateProvider.GetValueProvider(finger);
+            var featureValueProvider = _featureState.GetValueProvider(finger);
 
             _jointsCovered = featureValueProvider.GetJointsAffected(
                 finger,
@@ -135,7 +134,7 @@ namespace Oculus.Interaction.PoseDetection.Debug
 
         private void UpdateFeatureActiveValue()
         {
-            bool isActive = _fingerFeatureStateProvider.IsStateActive(_finger, _fingerFeatureConfig.Feature,
+            bool isActive = _featureState.IsStateActive(_finger, _fingerFeatureConfig.Feature,
                 _fingerFeatureConfig.Mode, _fingerFeatureConfig.State);
             if (isActive != _lastFeatureActiveValue)
             {

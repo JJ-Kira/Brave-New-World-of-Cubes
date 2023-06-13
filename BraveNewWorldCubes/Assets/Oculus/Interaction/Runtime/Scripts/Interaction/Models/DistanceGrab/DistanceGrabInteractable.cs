@@ -20,6 +20,7 @@
 
 using Oculus.Interaction.HandGrab;
 using UnityEngine;
+using UnityEngine.Assertions;
 
 namespace Oculus.Interaction
 {
@@ -30,7 +31,7 @@ namespace Oculus.Interaction
     /// moving it with deltas in its own place or allowing a pull motion, etc.
     /// </summary>
     public class DistanceGrabInteractable : PointerInteractable<DistanceGrabInteractor, DistanceGrabInteractable>,
-        IRigidbodyRef, IRelativeToRef, ICollidersRef
+        IRigidbodyRef, IDistanceInteractable
     {
         private Collider[] _colliders;
         public Collider[] Colliders => _colliders;
@@ -54,7 +55,7 @@ namespace Oculus.Interaction
         /// </summary>
         [Header("Snap")]
         [SerializeField, Optional, Interface(typeof(IMovementProvider))]
-        private UnityEngine.Object _movementProvider;
+        private MonoBehaviour _movementProvider;
         private IMovementProvider MovementProvider { get; set; }
 
         #region Properties
@@ -93,7 +94,7 @@ namespace Oculus.Interaction
         protected override void Start()
         {
             this.BeginStart(ref _started, () => base.Start());
-            this.AssertField(Rigidbody, nameof(Rigidbody));
+            Assert.IsNotNull(Rigidbody);
             _colliders = Rigidbody.GetComponentsInChildren<Collider>();
             if (MovementProvider == null)
             {
@@ -149,7 +150,7 @@ namespace Oculus.Interaction
 
         public void InjectOptionalMovementProvider(IMovementProvider provider)
         {
-            _movementProvider = provider as UnityEngine.Object;
+            _movementProvider = provider as MonoBehaviour;
             MovementProvider = provider;
         }
         #endregion

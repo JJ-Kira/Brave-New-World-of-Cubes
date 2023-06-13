@@ -8,23 +8,22 @@
 
 using System;
 using System.Collections.Generic;
-using Meta.WitAi.Interfaces;
-using Meta.WitAi.Json;
-using Meta.WitAi.Data.Info;
+using Facebook.WitAi.Interfaces;
+using Facebook.WitAi.Lib;
 
-namespace Meta.WitAi.Data.Entities
+namespace Facebook.WitAi.Data.Entities
 {
     [Serializable]
     public class WitDynamicEntity : IDynamicEntitiesProvider
     {
         public string entity;
-        public List<WitEntityKeywordInfo> keywords = new List<WitEntityKeywordInfo>();
+        public List<WitEntityKeyword> keywords = new List<WitEntityKeyword>();
 
         public WitDynamicEntity()
         {
         }
 
-        public WitDynamicEntity(string entity, WitEntityKeywordInfo keyword)
+        public WitDynamicEntity(string entity, WitEntityKeyword keyword)
         {
             this.entity = entity;
             this.keywords.Add(keyword);
@@ -35,11 +34,7 @@ namespace Meta.WitAi.Data.Entities
             this.entity = entity;
             foreach (var keyword in keywords)
             {
-                this.keywords.Add(new WitEntityKeywordInfo()
-                {
-                    keyword = keyword,
-                    synonyms = new List<string>(new string[] { keyword })
-                });
+                this.keywords.Add(new WitEntityKeyword(keyword));
             }
         }
 
@@ -49,7 +44,7 @@ namespace Meta.WitAi.Data.Entities
 
             foreach (var synonym in keywordsToSynonyms)
             {
-                keywords.Add(new WitEntityKeywordInfo()
+                keywords.Add(new WitEntityKeyword()
                 {
                     keyword = synonym.Key,
                     synonyms = synonym.Value
@@ -62,7 +57,13 @@ namespace Meta.WitAi.Data.Entities
         {
             get
             {
-                return JsonConvert.SerializeToken(keywords).AsArray;
+                WitResponseArray synonymArray = new WitResponseArray();
+                foreach (var keyword in keywords)
+                {
+                    synonymArray.Add(keyword.AsJson);
+                }
+
+                return synonymArray;
             }
         }
 

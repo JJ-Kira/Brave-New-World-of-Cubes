@@ -57,8 +57,8 @@ namespace Oculus.Interaction
         protected virtual void Start()
         {
             this.BeginStart(ref _started);
-            this.AssertField(_grabbable, nameof(_grabbable));
-            this.AssertField(_rigidbody, nameof(_rigidbody));
+            Assert.IsNotNull(_grabbable);
+            Assert.IsNotNull(_rigidbody);
             this.EndStart(ref _started);
         }
 

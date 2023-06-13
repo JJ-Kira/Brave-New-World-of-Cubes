@@ -106,8 +106,8 @@ namespace Oculus.Interaction
         protected virtual void Start()
         {
             this.BeginStart(ref _started);
-            this.AssertField(_rayInteractor, nameof(_rayInteractor));
-            this.AssertField(_renderer, nameof(_renderer));
+            Assert.IsNotNull(_rayInteractor);
+            Assert.IsNotNull(_renderer);
             UpdateVisual();
             this.EndStart(ref _started);
         }

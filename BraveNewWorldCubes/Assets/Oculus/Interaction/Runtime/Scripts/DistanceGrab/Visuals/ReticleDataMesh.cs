@@ -40,9 +40,10 @@ namespace Oculus.Interaction.DistanceReticles
 
         public Transform Target => _filter.transform;
 
-        public Vector3 ProcessHitPoint(Vector3 hitPoint)
+        public Vector3 BestHitPoint(Ray ray)
         {
-            return _filter.transform.position;
+            Vector3 bestPoint = _filter.transform.position;
+            return bestPoint;
         }
     }
 }

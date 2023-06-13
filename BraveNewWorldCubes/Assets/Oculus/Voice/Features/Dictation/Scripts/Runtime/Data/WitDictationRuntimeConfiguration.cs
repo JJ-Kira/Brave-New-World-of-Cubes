@@ -10,7 +10,7 @@ using System;
 using Oculus.Voice.Dictation.Configuration;
 using UnityEngine;
 
-namespace Meta.WitAi.Configuration
+namespace Facebook.WitAi.Configuration
 {
     [Serializable]
     public class WitDictationRuntimeConfiguration : WitRuntimeConfiguration

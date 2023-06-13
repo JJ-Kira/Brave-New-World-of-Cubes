@@ -9,10 +9,10 @@
 using System;
 using System.Reflection;
 using System.Threading;
-using Meta.WitAi.Utilities;
+using Facebook.WitAi.Utilities;
 using UnityEngine;
 
-namespace Meta.WitAi
+namespace Facebook.WitAi
 {
     internal class RegisteredMatchIntent
     {
@@ -54,10 +54,6 @@ namespace Meta.WitAi
 
         internal static void RefreshAssemblies()
         {
-            if (Thread.CurrentThread.ThreadState == ThreadState.Aborted)
-            {
-                return;
-            }
             // TODO: We could potentially build this list at compile time and cache it
             // Work on a local dictionary to avoid thread complications
             var dictionary = new DictionaryList<string, RegisteredMatchIntent>();
@@ -77,19 +73,19 @@ namespace Meta.WitAi
                                                 matchIntent = mi
                                             });
                                         } catch (Exception e) {
-                                            VLog.E(e);
+                                            Debug.LogError(e);
                                         }
                                     }
                                 } catch (Exception e) {
-                                    VLog.E(e);
+                                    Debug.LogError(e);
                                 }
                             }
                         } catch (Exception e) {
-                            VLog.E(e);
+                            Debug.LogError(e);
                         }
                     }
                 } catch (Exception e) {
-                    VLog.E(e);
+                    Debug.LogError(e);
                 }
             }
 

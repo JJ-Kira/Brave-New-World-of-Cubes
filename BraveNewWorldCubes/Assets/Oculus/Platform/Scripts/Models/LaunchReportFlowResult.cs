@@ -10,7 +10,6 @@ namespace Oculus.Platform.Models
 
   public class LaunchReportFlowResult
   {
-    /// Whether the viewer chose to cancel the report flow.
     public readonly bool DidCancel;
     public readonly UInt64 UserReportId;
 

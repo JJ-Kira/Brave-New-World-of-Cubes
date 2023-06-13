@@ -18,10 +18,9 @@
  * limitations under the License.
  */
 
-using System;
-using Meta.WitAi;
-using Meta.WitAi.Events;
-using Meta.WitAi.Json;
+using Facebook.WitAi;
+using Facebook.WitAi.Events;
+using Facebook.WitAi.Lib;
 using UnityEngine;
 
 namespace Oculus.Voice.Bindings.Android
@@ -32,7 +31,6 @@ namespace Oculus.Voice.Bindings.Android
         private readonly IVCBindingEvents _bindingEvents;
 
         public VoiceEvents VoiceEvents => _voiceService.VoiceEvents;
-        public TelemetryEvents TelemetryEvents => _voiceService.TelemetryEvents;
 
         public enum StoppedListeningReason : int {
             NoReasonProvided = 0,
@@ -50,7 +48,7 @@ namespace Oculus.Voice.Bindings.Android
 
         public void onResponse(string responseJson)
         {
-            WitResponseNode responseData = WitResponseNode.Parse(responseJson);
+            WitResponseNode responseData = WitResponseJson.Parse(responseJson);
             if (responseData != null)
             {
                 VoiceEvents.OnResponse?.Invoke(responseData);
@@ -59,7 +57,7 @@ namespace Oculus.Voice.Bindings.Android
 
         public void onPartialResponse(string responseJson)
         {
-            WitResponseNode responseData = WitResponseNode.Parse(responseJson);
+            WitResponseNode responseData = WitResponseJson.Parse(responseJson);
             if (responseData != null && responseData.HasResponse())
             {
                 VoiceEvents.OnPartialResponse?.Invoke(responseData);
@@ -88,9 +86,7 @@ namespace Oculus.Voice.Bindings.Android
 
         public void onRequestCreated()
         {
-            #pragma warning disable CS0618
             VoiceEvents.OnRequestCreated?.Invoke(null);
-            VoiceEvents.OnSend?.Invoke(null);
         }
 
         public void onStartListening()
@@ -138,21 +134,8 @@ namespace Oculus.Voice.Bindings.Android
 
         public void onServiceNotAvailable(string error, string message)
         {
-            VLog.W($"Platform service is not available: {error} - {message}");
+            Debug.LogWarning($"Platform service is not available: {error} - {message}");
             _bindingEvents.OnServiceNotAvailable(error, message);
-        }
-
-        public void onAudioDurationTrackerFinished(long timestamp, double duration)
-        {
-            long ticksElapsed = NativeTimestampToDateTime(timestamp).Ticks / TimeSpan.TicksPerMillisecond;
-            TelemetryEvents.OnAudioTrackerFinished?.Invoke(ticksElapsed, duration);
-        }
-
-        private DateTime NativeTimestampToDateTime(long javaTimestamp)
-        {
-            // Java timestamp is milliseconds past epoch
-            DateTime dateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
-            return dateTime.AddMilliseconds(javaTimestamp);
         }
     }
 }

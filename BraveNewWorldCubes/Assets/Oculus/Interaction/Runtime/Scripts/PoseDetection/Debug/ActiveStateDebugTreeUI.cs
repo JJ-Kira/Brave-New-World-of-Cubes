@@ -21,6 +21,7 @@
 using UnityEngine;
 using TMPro;
 using System.Collections.Generic;
+using UnityEngine.Assertions;
 
 namespace Oculus.Interaction.PoseDetection.Debug
 {
@@ -32,23 +33,18 @@ namespace Oculus.Interaction.PoseDetection.Debug
 
     public class ActiveStateDebugTreeUI : MonoBehaviour
     {
-        [Tooltip("The IActiveState to debug.")]
         [SerializeField, Interface(typeof(IActiveState))]
-        private UnityEngine.Object _activeState;
+        private MonoBehaviour _activeState;
 
-        [Tooltip("The node prefab which will be used to build the visual tree.")]
         [SerializeField, Interface(typeof(IActiveStateNodeUI))]
-        private UnityEngine.Object _nodePrefab;
+        private MonoBehaviour _nodePrefab;
 
-        [Tooltip("Node prefabs will be instantiated inside of this content area.")]
         [SerializeField]
         private RectTransform _contentArea;
 
-        [Tooltip("If true, the tree UI will be built on Start.")]
         [SerializeField]
         private bool _buildTreeOnStart;
 
-        [Tooltip("This title text will display the GameObject name of the IActiveState.")]
         [SerializeField, Optional]
         private TMP_Text _title;
 
@@ -66,9 +62,9 @@ namespace Oculus.Interaction.PoseDetection.Debug
 
         protected virtual void Start()
         {
-            this.AssertField(ActiveState, nameof(ActiveState));
-            this.AssertField(_nodePrefab, nameof(_nodePrefab));
-            this.AssertField(_contentArea, nameof(_contentArea));
+            Assert.IsNotNull(ActiveState);
+            Assert.IsNotNull(_nodePrefab);
+            Assert.IsNotNull(_contentArea);
 
             if (_buildTreeOnStart)
             {
@@ -119,7 +115,7 @@ namespace Oculus.Interaction.PoseDetection.Debug
             if (_title != null)
             {
                 _title.text = _activeState != null ?
-                    _activeState.name : "";
+                    _activeState.gameObject.name : "";
             }
         }
 

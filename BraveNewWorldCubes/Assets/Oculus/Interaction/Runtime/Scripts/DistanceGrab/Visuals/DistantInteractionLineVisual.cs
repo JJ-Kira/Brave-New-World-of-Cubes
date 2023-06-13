@@ -18,14 +18,16 @@
  * limitations under the License.
  */
 
+using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Assertions;
 
 namespace Oculus.Interaction.DistanceReticles
 {
     public abstract class DistantInteractionLineVisual : MonoBehaviour
     {
         [SerializeField, Interface(typeof(IDistanceInteractor))]
-        private UnityEngine.Object _distanceInteractor;
+        private MonoBehaviour _distanceInteractor;
         public IDistanceInteractor DistanceInteractor { get; protected set; }
 
         [SerializeField]
@@ -42,7 +44,7 @@ namespace Oculus.Interaction.DistanceReticles
             }
         }
 
-        private Vector3[] _linePoints;
+        private List<Vector3> _linePoints;
 
         [SerializeField]
         private bool _visibleDuringNormal;
@@ -68,8 +70,8 @@ namespace Oculus.Interaction.DistanceReticles
         protected virtual void Start()
         {
             this.BeginStart(ref _started);
-            this.AssertField(DistanceInteractor, nameof(DistanceInteractor));
-            _linePoints = new Vector3[NumLinePoints];
+            Assert.IsNotNull(DistanceInteractor);
+            _linePoints = new List<Vector3>(new Vector3[NumLinePoints]);
             this.EndStart(ref _started);
         }
 
@@ -132,13 +134,9 @@ namespace Oculus.Interaction.DistanceReticles
             {
                 UpdateLine();
             }
-            else
-            {
-                HideLine();
-            }
         }
 
-        protected virtual void InteractableSet(IRelativeToRef interactable)
+        protected virtual void InteractableSet(IDistanceInteractable interactable)
         {
             Component component = interactable as Component;
             if (component == null)
@@ -161,11 +159,10 @@ namespace Oculus.Interaction.DistanceReticles
 
         private void UpdateLine()
         {
-            Vector3 direction = DistanceInteractor.Origin.forward;
-            Vector3 origin = DistanceInteractor.Origin.position;
-            Vector3 start = origin + direction * VisualOffset;
-            Vector3 end = TargetHit(DistanceInteractor.HitPoint);
-            Vector3 middle = start + direction * Vector3.Distance(start, end) * 0.5f;
+            Ray ray = DistanceInteractor.Pointer;
+            Vector3 start = ray.origin + ray.direction * VisualOffset;
+            Vector3 end = TargetHit(ray);
+            Vector3 middle = start + ray.direction * Vector3.Distance(start, end) * 0.5f;
 
             for (int i = 0; i < NumLinePoints; i++)
             {
@@ -177,18 +174,16 @@ namespace Oculus.Interaction.DistanceReticles
             RenderLine(_linePoints);
         }
 
-        protected abstract void RenderLine(Vector3[] linePoints);
-        protected abstract void HideLine();
+        protected abstract void RenderLine(List<Vector3> linePoints);
 
-        protected Vector3 TargetHit(Vector3 hitPoint)
+        protected Vector3 TargetHit(Ray ray)
         {
             if (_target != null)
             {
-                return _target.ProcessHitPoint(hitPoint);
+                return _target.BestHitPoint(ray);
             }
 
-            return DistanceInteractor.Origin.position
-                + DistanceInteractor.Origin.forward * _targetlessLength;
+            return ray.origin + ray.direction * _targetlessLength;
         }
 
         protected static Vector3 EvaluateBezier(Vector3 start, Vector3 middle, Vector3 end, float t)
@@ -204,7 +199,7 @@ namespace Oculus.Interaction.DistanceReticles
         {
             public Transform Target { get; set; }
 
-            public Vector3 ProcessHitPoint(Vector3 hitPoint)
+            public Vector3 BestHitPoint(Ray ray)
             {
                 return Target.position;
             }
@@ -219,7 +214,7 @@ namespace Oculus.Interaction.DistanceReticles
 
         public void InjectDistanceInteractor(IDistanceInteractor interactor)
         {
-            _distanceInteractor = interactor as UnityEngine.Object;
+            _distanceInteractor = interactor as MonoBehaviour;
             DistanceInteractor = interactor;
         }
 

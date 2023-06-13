@@ -10,11 +10,11 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.Serialization;
-using Meta.WitAi.TTS.Data;
-using Meta.WitAi.TTS.Interfaces;
-using Meta.WitAi.TTS.Events;
+using Facebook.WitAi.TTS.Data;
+using Facebook.WitAi.TTS.Interfaces;
+using Facebook.WitAi.TTS.Events;
 
-namespace Meta.WitAi.TTS.Integrations
+namespace Facebook.WitAi.TTS.Integrations
 {
     // A simple LRU Cache
     public class TTSRuntimeCache : MonoBehaviour, ITTSRuntimeCacheHandler
@@ -66,13 +66,6 @@ namespace Meta.WitAi.TTS.Integrations
         /// </summary>
         public TTSClipData[] GetClips() => _clips.Values.ToArray();
 
-        // Remove all
-        protected virtual void OnDestroy()
-        {
-            _clips.Clear();
-            _clipOrder.Clear();
-        }
-
         /// <summary>
         /// Getter for a clip that also moves clip to the back of the queue
         /// </summary>
@@ -97,12 +90,12 @@ namespace Meta.WitAi.TTS.Integrations
         /// Add clip to cache and ensure it is most recently referenced
         /// </summary>
         /// <param name="clipData"></param>
-        public bool AddClip(TTSClipData clipData)
+        public void AddClip(TTSClipData clipData)
         {
             // Do not add null
             if (clipData == null)
             {
-                return false;
+                return;
             }
             // Remove from order
             bool wasAdded = true;
@@ -121,18 +114,14 @@ namespace Meta.WitAi.TTS.Integrations
             // Evict least recently used clips
             while (IsCacheFull() && _clipOrder.Count > 0)
             {
-                // Remove clip
                 RemoveClip(_clipOrder[0]);
             }
 
-            // Call add delegate even if removed
+            // Call add delegate
             if (wasAdded && _clips.Keys.Count > 0)
             {
                 OnClipAdded?.Invoke(clipData);
             }
-
-            // True if successfully added
-            return _clips.Keys.Count > 0;
         }
 
         /// <summary>

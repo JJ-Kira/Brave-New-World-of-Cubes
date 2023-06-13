@@ -37,26 +37,51 @@ namespace Oculus.Interaction.HandGrab
             Palm
         }
 
-        private Transform _relativeTo;
-        private HandGrabResult _handGrabResult = new HandGrabResult();
+        public ref Pose Pose => ref _pose;
 
-        public HandPose HandPose => _handGrabResult.HasHandPose ? _handGrabResult.HandPose : null;
+        public HandPose HandPose => _isHandPoseValid ? _handPose : null;
 
-        public Pose GetWorldPoseDisplaced(in Pose offset)
-        {
-            Pose displaced = PoseUtils.Multiply(_handGrabResult.RelativePose, offset);
-            return PoseUtils.GlobalPose(_relativeTo, displaced);
-        }
+        public Pose WorldGrabPose => _relativeTo != null ? _relativeTo.GlobalPose(Pose) : Pose.identity;
+        public HandAlignType HandAlignment => _handAlignment;
 
-        public HandAlignType HandAlignment { get; private set; } = HandAlignType.None;
         public GrabAnchor Anchor { get; private set; } = GrabAnchor.None;
 
-        public void Set(Transform relativeTo, HandAlignType handAlignment, GrabAnchor anchor, HandGrabResult handGrabResult)
+        private bool _isHandPoseValid = false;
+        private HandPose _handPose = new HandPose();
+        private Pose _pose;
+
+        private Transform _relativeTo;
+        private HandAlignType _handAlignment;
+
+        public void Set(HandGrabTarget other)
+        {
+            _relativeTo = other._relativeTo;
+            _handAlignment = other._handAlignment;
+            _pose = other._pose;
+            _isHandPoseValid = other._isHandPoseValid;
+            _handPose.CopyFrom(other._handPose);
+            Anchor = other.Anchor;
+        }
+
+        public void Set(Transform relativeTo, HandAlignType handAlignment, GrabAnchor anchor, HandGrabResult result)
         {
             Anchor = anchor;
-            HandAlignment = handAlignment;
             _relativeTo = relativeTo;
-            _handGrabResult.CopyFrom(handGrabResult);
+            _handAlignment = handAlignment;
+            _pose.CopyFrom(result.SnapPose);
+            _isHandPoseValid = result.HasHandPose;
+            if (_isHandPoseValid)
+            {
+                _handPose.CopyFrom(result.HandPose);
+            }
+        }
+
+        public void Clear()
+        {
+            Anchor = GrabAnchor.None;
+            _isHandPoseValid = false;
+            _relativeTo = null;
+            _handAlignment = HandAlignType.None;
         }
     }
 }

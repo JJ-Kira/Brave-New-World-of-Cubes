@@ -27,16 +27,22 @@ namespace Oculus.Interaction.Grab
     public struct PoseMeasureParameters
     {
         [SerializeField]
+        [Min(0f)]
+        private float _maxDistance;
+
+        [SerializeField]
         [Range(0f, 1f)]
         private float _positionRotationWeight;
 
+        public float MaxDistance => _maxDistance;
         public float PositionRotationWeight => _positionRotationWeight;
 
-        public PoseMeasureParameters(float positionRotationWeight)
+        public PoseMeasureParameters(float maxDistance, float positionRotationWeight)
         {
+            _maxDistance = maxDistance;
             _positionRotationWeight = positionRotationWeight;
         }
 
-        public static readonly PoseMeasureParameters DEFAULT = new PoseMeasureParameters(0f);
+        public static readonly PoseMeasureParameters DEFAULT = new PoseMeasureParameters(0.1f, 0f);
     }
 }

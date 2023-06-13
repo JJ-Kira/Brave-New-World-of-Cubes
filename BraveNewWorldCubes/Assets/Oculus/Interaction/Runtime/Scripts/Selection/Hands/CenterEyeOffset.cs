@@ -20,14 +20,15 @@
 
 using Oculus.Interaction.Input;
 using UnityEngine;
+using UnityEngine.Assertions;
 
 namespace Oculus.Interaction
 {
     public class CenterEyeOffset : MonoBehaviour
     {
-        [SerializeField, Interface(typeof(IHmd))]
-        private UnityEngine.Object _hmd;
-        public IHmd Hmd { get; private set; }
+        [SerializeField, Interface(typeof(IHand))]
+        private MonoBehaviour _hand;
+        public IHand Hand { get; private set; }
 
         [SerializeField]
         private Vector3 _offset;
@@ -41,13 +42,13 @@ namespace Oculus.Interaction
 
         protected virtual void Awake()
         {
-            Hmd = _hmd as IHmd;
+            Hand = _hand as IHand;
         }
 
         protected virtual void Start()
         {
             this.BeginStart(ref _started);
-            this.AssertField(Hmd, nameof(Hmd));
+            Assert.IsNotNull(Hand);
             this.EndStart(ref _started);
         }
 
@@ -55,7 +56,7 @@ namespace Oculus.Interaction
         {
             if (_started)
             {
-                Hmd.WhenUpdated += HandleUpdated;
+                Hand.WhenHandUpdated += HandleHandUpdated;
             }
         }
 
@@ -63,13 +64,13 @@ namespace Oculus.Interaction
         {
             if (_started)
             {
-                Hmd.WhenUpdated -= HandleUpdated;
+                Hand.WhenHandUpdated -= HandleHandUpdated;
             }
         }
 
-        private void HandleUpdated()
+        private void HandleHandUpdated()
         {
-            if (Hmd.TryGetRootPose(out Pose rootPose))
+            if (Hand.GetCenterEyePose(out Pose rootPose))
             {
                 GetOffset(ref _cachedPose);
                 _cachedPose.Postmultiply(rootPose);
@@ -90,6 +91,11 @@ namespace Oculus.Interaction
         }
 
         #region Inject
+        public void InjectHand(IHand hand)
+        {
+            _hand = hand as MonoBehaviour;
+            Hand = hand;
+        }
 
         public void InjectOffset(Vector3 offset)
         {
@@ -101,20 +107,13 @@ namespace Oculus.Interaction
             _rotation = rotation;
         }
 
-        public void InjectAllCenterEyeOffset(IHmd hmd,
+        public void InjectAllCenterEyeOffset(IHand hand,
             Vector3 offset, Quaternion rotation)
         {
-            InjectHmd(hmd);
+            InjectHand(hand);
             InjectOffset(offset);
             InjectRotation(rotation);
         }
-
-        public void InjectHmd(IHmd hmd)
-        {
-            Hmd = hmd;
-            _hmd = hmd as UnityEngine.Object;
-        }
-
         #endregion
     }
 }

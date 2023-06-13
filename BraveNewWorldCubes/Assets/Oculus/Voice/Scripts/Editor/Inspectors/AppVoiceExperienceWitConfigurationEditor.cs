@@ -18,10 +18,9 @@
  * limitations under the License.
  */
 
-using Meta.WitAi.Data.Configuration;
-using Meta.WitAi.Windows;
-using Meta.WitAi;
-using Meta.WitAi.Data.Info;
+using Facebook.WitAi.Data.Configuration;
+using Facebook.WitAi.Windows;
+using Facebook.WitAi;
 using Oculus.Voice.Utility;
 using UnityEditor;
 using UnityEngine;
@@ -32,30 +31,35 @@ namespace Oculus.Voice.Inspectors
     public class AppVoiceExperienceWitConfigurationEditor : WitConfigurationEditor
     {
         // Override with voice sdk header
-        protected override Texture2D HeaderIcon => VoiceSDKStyles.MainHeader;
-        public override string HeaderUrl => GetSafeAppUrl(Configuration, WitTexts.WitAppEndpointType.Settings);
-        protected override string DocsUrl => VoiceSDKStyles.Texts.VoiceDocsUrl;
-        protected override string OpenButtonLabel => IsBuiltInConfiguration(Configuration) ? VoiceSDKStyles.Texts.BuiltInAppBtnLabel : base.OpenButtonLabel;
+        public override Texture2D HeaderIcon => VoiceSDKStyles.MainHeader;
+        public override string HeaderUrl => GetSafeAppUrl(configuration, WitTexts.WitAppEndpointType.Settings);
+        public override string OpenButtonLabel => IsBuiltInConfiguration(configuration) ? VoiceSDKStyles.Texts.BuiltInAppBtnLabel : base.OpenButtonLabel;
 
-        // Disable server functionality for built in configurations
-        protected override bool _disableServerPost => IsBuiltInConfiguration(Configuration);
+        // Dont allow built-in configurations to refresh
+        protected override bool CanConfigurationRefresh(WitConfiguration configuration)
+        {
+            return base.CanConfigurationRefresh(configuration) && !IsBuiltInConfiguration(configuration);
+        }
+        // Dont show certain tabs for built in configurations
+        protected override bool ShouldTabShow(WitConfiguration configuration, string tabID)
+        {
+            return base.ShouldTabShow(configuration, tabID) && (!IsBuiltInConfiguration(configuration) || IsBuiltInTabID(tabID));
+        }
 
         // Use to determine if built in configuration
         public static bool IsBuiltInConfiguration(WitConfiguration witConfiguration)
         {
-            if (witConfiguration == null)
-            {
-                return false;
-            }
-            return IsBuiltInConfiguration(witConfiguration.GetApplicationInfo());
-        }
-        public static bool IsBuiltInConfiguration(WitAppInfo appInfo)
-        {
-            return IsBuiltInConfiguration(appInfo.id);
+            string applicationID = WitConfigurationUtility.GetAppID(witConfiguration);
+            return IsBuiltInConfiguration(applicationID);
         }
         public static bool IsBuiltInConfiguration(string applicationID)
         {
             return !string.IsNullOrEmpty(applicationID) && applicationID.StartsWith("voice");
+        }
+        // Tabs that should show for built in configurations
+        private bool IsBuiltInTabID(string tabID)
+        {
+            return string.Equals(TAB_APPLICATION_ID, tabID);
         }
 
         // Get safe app url
@@ -67,7 +71,7 @@ namespace Oculus.Voice.Inspectors
                 return VoiceSDKStyles.Texts.BuiltInAppUrl;
             }
             // Return wit app id
-            return WitTexts.GetAppURL(witConfiguration?.GetApplicationId(), endpointType);
+            return WitTexts.GetAppURL(WitConfigurationUtility.GetAppID(witConfiguration), endpointType);
         }
     }
 }

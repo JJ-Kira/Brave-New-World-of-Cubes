@@ -20,7 +20,7 @@
 
 using UnityEngine;
 
-namespace Oculus.Interaction
+namespace Oculus.Interaction.HandGrab
 {
     [System.Serializable]
     public struct DistantPointDetectorFrustums
@@ -83,7 +83,7 @@ namespace Oculus.Interaction
 
         public bool ComputeIsPointing(Collider[] colliders, bool isSelecting, out float bestScore, out Vector3 bestHitPoint)
         {
-            ConicalFrustum searchFrustrum = (isSelecting || _frustums.DeselectionFrustum == null) ?
+            ConicalFrustum _searchFrustrum = (isSelecting || _frustums.DeselectionFrustum == null) ?
                 _frustums.SelectionFrustum : _frustums.DeselectionFrustum;
             bestHitPoint = Vector3.zero;
             bestScore = float.NegativeInfinity;
@@ -92,7 +92,7 @@ namespace Oculus.Interaction
             foreach (Collider collider in colliders)
             {
                 float score = 0f;
-                if (!searchFrustrum.HitsCollider(collider, out score, out Vector3 hitPoint))
+                if (!_searchFrustrum.HitsCollider(collider, out score, out Vector3 hitPoint))
                 {
                     continue;
                 }
@@ -116,14 +116,13 @@ namespace Oculus.Interaction
             return anyHit;
         }
 
-        public bool IsPointingWithoutAid(Collider[] colliders, out Vector3 bestHitPoint)
+        public bool IsPointingWithoutAid(Collider[] colliders)
         {
             if (_frustums.AidFrustum == null)
             {
-                bestHitPoint = Vector3.zero;
                 return false;
             }
-            return !IsPointingAtColliders(colliders, _frustums.AidFrustum, out bestHitPoint)
+            return !IsPointingAtColliders(colliders, _frustums.AidFrustum)
                 && IsWithinDeselectionRange(colliders);
         }
 
@@ -148,31 +147,6 @@ namespace Oculus.Interaction
                 }
             }
             return false;
-        }
-
-        private bool IsPointingAtColliders(Collider[] colliders, ConicalFrustum frustum,
-            out Vector3 bestHitPoint)
-        {
-            bestHitPoint = Vector3.zero;
-            float bestScore = float.NegativeInfinity;
-            bool isPointing = false;
-            if (frustum == null)
-            {
-                return false;
-            }
-            foreach (Collider collider in colliders)
-            {
-                if (frustum.HitsCollider(collider, out float score, out Vector3 point))
-                {
-                    isPointing = true;
-                    if (score > bestScore)
-                    {
-                        bestScore = score;
-                        bestHitPoint = point;
-                    }
-                }
-            }
-            return isPointing;
         }
     }
 }

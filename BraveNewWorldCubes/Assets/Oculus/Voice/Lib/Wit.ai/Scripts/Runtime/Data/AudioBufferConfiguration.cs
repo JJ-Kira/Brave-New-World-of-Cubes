@@ -6,12 +6,10 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-using System;
 using UnityEngine;
 
-namespace Meta.WitAi.Data
+namespace Facebook.WitAi.Data
 {
-    [Serializable]
     public class AudioBufferConfiguration
     {
         [Tooltip("The length of the individual samples read from the audio source")]

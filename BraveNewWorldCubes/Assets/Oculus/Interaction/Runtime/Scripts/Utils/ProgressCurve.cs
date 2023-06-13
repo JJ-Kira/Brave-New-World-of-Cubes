@@ -36,46 +36,13 @@ namespace Oculus.Interaction
     {
         [SerializeField]
         private AnimationCurve _animationCurve;
-        public AnimationCurve AnimationCurve
-        {
-            get
-            {
-                return _animationCurve;
-            }
-            set
-            {
-                _animationCurve = value;
-            }
-        }
 
         [SerializeField]
         private float _animationLength;
-        public float AnimationLength
-        {
-            get
-            {
-                return _animationLength;
-            }
-            set
-            {
-                _animationLength = value;
-            }
-        }
-
-        private Func<float> _timeProvider = () => Time.time;
-        public Func<float> TimeProvider
-        {
-            get
-            {
-                return _timeProvider;
-            }
-            set
-            {
-                _timeProvider = value;
-            }
-        }
 
         private float _animationStartTime;
+
+        public float AnimationLength => _animationLength;
 
         public ProgressCurve()
         {
@@ -91,20 +58,14 @@ namespace Oculus.Interaction
 
         public ProgressCurve(ProgressCurve other)
         {
-            Copy(other);
-        }
-
-        public void Copy(ProgressCurve other)
-        {
             _animationCurve = other._animationCurve;
             _animationLength = other._animationLength;
             _animationStartTime = other._animationStartTime;
-            _timeProvider = other._timeProvider;
         }
 
         public void Start()
         {
-            _animationStartTime = _timeProvider();
+            _animationStartTime = Time.time;
         }
 
         public float Progress()
@@ -131,13 +92,12 @@ namespace Oculus.Interaction
 
         public float ProgressTime()
         {
-            return Mathf.Clamp(_timeProvider() - _animationStartTime, 0f, _animationLength);
+            return Mathf.Clamp(Time.time - _animationStartTime, 0f, _animationLength);
         }
 
         public void End()
         {
-            _animationStartTime = _timeProvider() - _animationLength;
+            _animationStartTime = Time.time - _animationLength;
         }
-
     }
 }

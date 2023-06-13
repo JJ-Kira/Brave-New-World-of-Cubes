@@ -10,7 +10,6 @@ namespace Oculus.Platform.Models
 
   public class BlockedUser
   {
-    /// user ID that has been blocked by the logged in user
     public readonly UInt64 Id;
 
 

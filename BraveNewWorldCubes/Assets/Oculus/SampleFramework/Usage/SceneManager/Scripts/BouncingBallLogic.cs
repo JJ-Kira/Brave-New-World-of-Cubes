@@ -3,89 +3,87 @@ using UnityEngine;
 
 public class BouncingBallLogic : MonoBehaviour
 {
-    [SerializeField] private float TTL = 5.0f;
-    [SerializeField] private AudioClip pop;
-    [SerializeField] private AudioClip bounce;
-    [SerializeField] private AudioClip loadball;
-    [SerializeField] private Material visibleMat;
-    [SerializeField] private Material hiddenMat;
-    private AudioSource audioSource;
-    private Transform centerEyeCamera;
-    private bool isVisible = true;
+  [SerializeField] private float TTL = 5.0f;
+  [SerializeField] private AudioClip pop;
+  [SerializeField] private AudioClip bounce;
+  [SerializeField] private AudioClip loadball;
+  [SerializeField] private Material visibleMat;
+  [SerializeField] private Material hiddenMat;
+  private AudioSource audioSource;
+  private Transform centerEyeCamera;
+  private bool isVisible = true;
 
-    private float timer = 0f;
-    private bool isReleased = false;
-    private bool isReadyForDestroy = false;
+  private float timer = 0f;
+  private bool isReleased = false;
+  private bool isReadyForDestroy = false;
 
-    private void OnCollisionEnter() => audioSource.PlayOneShot(bounce);
+  private void OnCollisionEnter() => audioSource.PlayOneShot(bounce);
+  private void Start()
+  {
+    audioSource = GetComponent<AudioSource>();
+    audioSource.PlayOneShot(loadball);
+    centerEyeCamera = OVRManager.instance.GetComponentInChildren<OVRCameraRig>().centerEyeAnchor;
+  }
 
-    private void Start()
+
+  private void Update()
+  {
+    if (!isReleased) return;
+    UpdateVisibility();
+    timer += Time.deltaTime;
+    if (!isReadyForDestroy && timer >= TTL)
     {
-        audioSource = GetComponent<AudioSource>();
-        audioSource.PlayOneShot(loadball);
-        centerEyeCamera = OVRManager.instance.GetComponentInChildren<OVRCameraRig>().centerEyeAnchor;
+      isReadyForDestroy = true;
+      float clipLength = pop.length;
+      audioSource.PlayOneShot(pop);
+      StartCoroutine(PlayPopCallback(clipLength));
     }
+  }
 
-
-    private void Update()
+  private void UpdateVisibility()
+  {
+    Vector3 displacement = centerEyeCamera.position - this.transform.position;
+    Ray ray = new Ray(this.transform.position, displacement);
+    RaycastHit info;
+    if (Physics.Raycast(ray, out info, displacement.magnitude))
     {
-        if (!isReleased) return;
-        UpdateVisibility();
-        timer += Time.deltaTime;
-        if (!isReadyForDestroy && timer >= TTL)
-        {
-            isReadyForDestroy = true;
-            float clipLength = pop.length;
-            audioSource.PlayOneShot(pop);
-            StartCoroutine(PlayPopCallback(clipLength));
-        }
+      if (info.collider.gameObject != this.gameObject)
+      {
+        SetVisible(false);
+      }
     }
-
-    private void UpdateVisibility()
+    else
     {
-        Vector3 displacement = centerEyeCamera.position - this.transform.position;
-        Ray ray = new Ray(this.transform.position, displacement);
-        RaycastHit info;
-        if (Physics.Raycast(ray, out info, displacement.magnitude))
-        {
-            if (info.collider.gameObject != this.gameObject)
-            {
-                SetVisible(false);
-            }
-        }
-        else
-        {
-            SetVisible(true);
-        }
+      SetVisible(true);
     }
+  }
 
-    private void SetVisible(bool setVisible)
+  private void SetVisible(bool setVisible)
+  {
+    if (isVisible && !setVisible)
     {
-        if (isVisible && !setVisible)
-        {
-            GetComponent<MeshRenderer>().material = hiddenMat;
-            isVisible = false;
-        }
-
-        if (!isVisible && setVisible)
-        {
-            GetComponent<MeshRenderer>().material = visibleMat;
-            isVisible = true;
-        }
+      GetComponent<MeshRenderer>().material = hiddenMat;
+      isVisible = false;
     }
-
-    public void Release(Vector3 pos, Vector3 vel, Vector3 angVel)
+    if (!isVisible && setVisible)
     {
-        isReleased = true;
-        transform.position = pos; // set the orign to match target
-        GetComponent<Rigidbody>().isKinematic = false;
-        GetComponent<Rigidbody>().velocity = vel;
-        GetComponent<Rigidbody>().angularVelocity = angVel;
+      GetComponent<MeshRenderer>().material = visibleMat;
+      isVisible = true;
     }
+  }
 
-    private IEnumerator PlayPopCallback(float clipLength)
-    {
-        yield return new WaitForSeconds(clipLength);
-        Destroy(gameObject);
-    }
+  public void Release(Vector3 pos, Vector3 vel, Vector3 angVel)
+  {
+    isReleased = true;
+    transform.position = pos; // set the orign to match target
+    GetComponent<Rigidbody>().isKinematic = false;
+    GetComponent<Rigidbody>().velocity = vel;
+    GetComponent<Rigidbody>().angularVelocity = angVel;
+  }
+
+  private IEnumerator PlayPopCallback(float clipLength)
+  {
+    yield return new WaitForSeconds(clipLength);
+    Destroy(gameObject);
+  }
 }

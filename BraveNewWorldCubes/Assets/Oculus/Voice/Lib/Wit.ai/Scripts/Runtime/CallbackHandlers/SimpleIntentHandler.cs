@@ -6,59 +6,82 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-using System;
-using Meta.WitAi.Json;
+using Facebook.WitAi.Lib;
 using UnityEngine;
 using UnityEngine.Events;
 
-namespace Meta.WitAi.CallbackHandlers
+namespace Facebook.WitAi.CallbackHandlers
 {
     [AddComponentMenu("Wit.ai/Response Matchers/Simple Intent Handler")]
-    public class SimpleIntentHandler : WitIntentMatcher
+    public class SimpleIntentHandler : WitResponseHandler
     {
+        [SerializeField] public string intent;
+        [Range(0, 1f)]
+        [SerializeField] public float confidence = .9f;
         [SerializeField] private UnityEvent onIntentTriggered = new UnityEvent();
 
         [Tooltip("Confidence ranges are executed in order. If checked, all confidence values will be checked instead of stopping on the first one that matches.")]
         [SerializeField] public bool allowConfidenceOverlap;
-#if UNITY_2021_3_2 || UNITY_2021_3_3 || UNITY_2021_3_4 || UNITY_2021_3_5
-        [NonReorderable]
-#endif
         [SerializeField] public ConfidenceRange[] confidenceRanges;
 
         public UnityEvent OnIntentTriggered => onIntentTriggered;
 
-        protected override void OnResponseSuccess(WitResponseNode response)
+        protected override void OnHandleResponse(WitResponseNode response)
         {
-            onIntentTriggered.Invoke();
-            UpdateRanges(response);
-        }
-        protected override void OnResponseInvalid(WitResponseNode response, string error)
-        {
-            UpdateRanges(response);
-        }
+            if (null == response) return;
 
-        private void UpdateRanges(WitResponseNode response)
-        {
-            // Find intents if possible
-            var intents = response?.GetIntents();
-            if (intents == null)
+            bool matched = false;
+            foreach (var intentNode in response?["intents"]?.Childs)
             {
-                return;
-            }
-
-            // Iterate intents
-            foreach (var intentData in intents)
-            {
-                if (string.Equals(intent, intentData.name, StringComparison.CurrentCultureIgnoreCase))
+                var resultConfidence = intentNode["confidence"].AsFloat;
+                if (intent == intentNode["name"].Value)
                 {
-                    // Found intent
-                    RefreshConfidenceRange(intentData.confidence, confidenceRanges, allowConfidenceOverlap);
-                    return;
+                    matched = true;
+                    if (resultConfidence >= confidence)
+                    {
+                        onIntentTriggered.Invoke();
+                    }
+
+                    CheckInsideRange(resultConfidence);
+                    CheckOutsideRange(resultConfidence);
                 }
             }
 
-            // Not matched
-            RefreshConfidenceRange(0, confidenceRanges, allowConfidenceOverlap);
+            if(!matched)
+            {
+                CheckInsideRange(0);
+                CheckOutsideRange(0);
+            }
+        }
+
+        private void CheckOutsideRange(float resultConfidence)
+        {
+            for (int i = 0; null != confidenceRanges && i < confidenceRanges.Length; i++)
+            {
+                var range = confidenceRanges[i];
+                if (resultConfidence < range.minConfidence ||
+                    resultConfidence > range.maxConfidence)
+                {
+                    range.onOutsideConfidenceRange?.Invoke();
+
+                    if (!allowConfidenceOverlap) break;
+                }
+            }
+        }
+
+        private void CheckInsideRange(float resultConfidence)
+        {
+            for (int i = 0; null != confidenceRanges && i < confidenceRanges.Length; i++)
+            {
+                var range = confidenceRanges[i];
+                if (resultConfidence >= range.minConfidence &&
+                    resultConfidence <= range.maxConfidence)
+                {
+                    range.onWithinConfidenceRange?.Invoke();
+
+                    if (!allowConfidenceOverlap) break;
+                }
+            }
         }
     }
 }

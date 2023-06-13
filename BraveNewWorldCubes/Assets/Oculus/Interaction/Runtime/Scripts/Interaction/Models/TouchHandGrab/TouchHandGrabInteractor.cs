@@ -23,7 +23,6 @@ using UnityEngine;
 using UnityEngine.Assertions;
 using Oculus.Interaction.Input;
 using Oculus.Interaction.PoseDetection;
-using UnityEngine.Serialization;
 
 namespace Oculus.Interaction
 {
@@ -37,15 +36,15 @@ namespace Oculus.Interaction
         TouchHandGrabInteractor : PointerInteractor<TouchHandGrabInteractor, TouchHandGrabInteractable>
     {
         [SerializeField, Interface(typeof(IHand))]
-        private UnityEngine.Object _hand;
+        private MonoBehaviour _hand;
         private IHand Hand { get; set; }
 
         [SerializeField, Interface(typeof(IHand))]
-        private UnityEngine.Object _openHand;
+        private MonoBehaviour _openHand;
         private IHand OpenHand { get; set; }
 
         [SerializeField, Interface(typeof(IHandSphereMap))]
-        private UnityEngine.Object _handSphereMap;
+        private MonoBehaviour _handSphereMap;
         protected IHandSphereMap HandSphereMap;
 
         [SerializeField]
@@ -63,11 +62,8 @@ namespace Oculus.Interaction
         [SerializeField]
         private float _curlTimeThreshold = 0.05f;
 
-        [SerializeField, Min(1)]
+        [SerializeField]
         private int _iterations = 10;
-
-        [SerializeField, Interface(typeof(IActiveState)), Optional]
-        private UnityEngine.Object _grabPrerequisite;
 
         public event Action WhenFingerLocked = delegate () { };
 
@@ -76,8 +72,6 @@ namespace Oculus.Interaction
         private Vector3 GrabOffset = Vector3.zero;
         private Vector3 GrabPosition => _grabLocation.position;
         private Quaternion GrabRotation => _grabLocation.rotation;
-
-        protected IActiveState GrabPrerequisite = null;
 
         private class FingerStatus
         {
@@ -105,7 +99,6 @@ namespace Oculus.Interaction
             Hand = _hand as IHand;
             OpenHand = _openHand as IHand;
             HandSphereMap = _handSphereMap as IHandSphereMap;
-            GrabPrerequisite = _grabPrerequisite as IActiveState;
 
             _fingerStatuses = new FingerStatus[Constants.NUM_FINGERS];
             for (int i = 0; i < Constants.NUM_FINGERS; i++)
@@ -130,12 +123,12 @@ namespace Oculus.Interaction
         protected override void Start()
         {
             base.Start();
-            this.AssertField(_hoverLocation, nameof(_hoverLocation));
-            this.AssertField(_grabLocation, nameof(_grabLocation));
-            this.AssertField(Hand, nameof(Hand));
-            this.AssertField(OpenHand, nameof(OpenHand));
-            this.AssertField(HandSphereMap, nameof(HandSphereMap));
-            this.AssertIsTrue(_iterations > 0, $"{AssertUtils.Nicify(nameof(_iterations))} must be bigger than {0}.");
+            Assert.IsNotNull(_hoverLocation);
+            Assert.IsNotNull(_grabLocation);
+            Assert.IsNotNull(Hand);
+            Assert.IsNotNull(OpenHand);
+            Assert.IsNotNull(HandSphereMap);
+            Assert.IsTrue(_iterations > 0);
 
             _touchShadowHand = new TouchShadowHand(HandSphereMap, Hand.Handedness, _iterations);
             _fromShadow = new ShadowHand();
@@ -207,7 +200,7 @@ namespace Oculus.Interaction
 
         protected override bool ComputeShouldUnselect()
         {
-            return !HandStatusSelecting();
+                return !HandStatusSelecting();
         }
 
         protected override void DoHoverUpdate()
@@ -259,7 +252,11 @@ namespace Oculus.Interaction
 
             if (!HandStatusSelecting())
             {
-                ClearFingerLockStatuses();
+                for (int i = 0; i < _fingerStatuses.Length; i++)
+                {
+                    _fingerStatuses[i].Locked = false;
+                    _fingerStatuses[i].Selecting = false;
+                }
             }
             else
             {
@@ -271,19 +268,9 @@ namespace Oculus.Interaction
             WhenFingerLocked();
         }
 
-        private bool MeetsGrabPrerequisite()
-        {
-            if (GrabPrerequisite == null || GrabPrerequisite.Active)
-            {
-                return true;
-            }
-            return false;
-        }
-
         private bool HandStatusSelecting()
         {
-            return MeetsGrabPrerequisite() &&
-                   _fingerStatuses[0].Selecting &&
+            return _fingerStatuses[0].Selecting &&
                    (_fingerStatuses[1].Selecting ||
                     _fingerStatuses[2].Selecting ||
                     _fingerStatuses[3].Selecting ||
@@ -448,18 +435,15 @@ namespace Oculus.Interaction
             _touchShadowHand.ShadowHand.Copy(_fromShadow);
 
             _touchShadowHand.SetShadowRootFromHand(_fromShadow);
-            if (MeetsGrabPrerequisite())
+            for (int i = 0; i < _fingerStatuses.Length; i++)
             {
-                for (int i = 0; i < _fingerStatuses.Length; i++)
+                if (_fingerStatuses[i].Locked)
                 {
-                    if (_fingerStatuses[i].Locked)
-                    {
-                        ComputeNewRelease(i, interactable.ColliderGroup, Vector3.zero);
-                    }
-                    else
-                    {
-                        ComputeNewTouching(i, interactable.ColliderGroup, Vector3.zero);
-                    }
+                    ComputeNewRelease(i, interactable.ColliderGroup, Vector3.zero);
+                }
+                else
+                {
+                    ComputeNewTouching(i, interactable.ColliderGroup, Vector3.zero);
                 }
             }
 
@@ -474,22 +458,17 @@ namespace Oculus.Interaction
                 return;
             }
 
-            ClearFingerLockStatuses();
+            for (int i = 0; i < _fingerStatuses.Length; i++)
+            {
+                _fingerStatuses[i].Locked = false;
+                _fingerStatuses[i].Selecting = false;
+            }
 
             GrabOffset = Vector3.zero;
 
             WhenFingerLocked();
 
             base.Unselect();
-        }
-
-        private void ClearFingerLockStatuses()
-        {
-            for (int i = 0; i < _fingerStatuses.Length; i++)
-            {
-                _fingerStatuses[i].Locked = false;
-                _fingerStatuses[i].Selecting = false;
-            }
         }
 
         protected override TouchHandGrabInteractable ComputeCandidate()
@@ -538,19 +517,19 @@ namespace Oculus.Interaction
         public void InjectHand(IHand hand)
         {
             Hand = hand;
-            _hand = hand as UnityEngine.Object;
+            _hand = hand as MonoBehaviour;
         }
 
         public void InjectOpenHand(IHand openHand)
         {
             OpenHand = openHand;
-            _openHand = openHand as UnityEngine.Object;
+            _openHand = openHand as MonoBehaviour;
         }
 
         public void InjectHandSphereMap(IHandSphereMap handSphereMap)
         {
             HandSphereMap = handSphereMap;
-            _handSphereMap = handSphereMap as UnityEngine.Object;
+            _handSphereMap = handSphereMap as MonoBehaviour;
         }
 
         public void InjectHoverLocation(Transform hoverLocation)
@@ -561,12 +540,6 @@ namespace Oculus.Interaction
         public void InjectGrabLocation(Transform grabLocation)
         {
             _grabLocation = grabLocation;
-        }
-
-        public void InjectOptionalGrabPrerequisite(IActiveState grabPrerequisite)
-        {
-            GrabPrerequisite = grabPrerequisite;
-            _grabPrerequisite = grabPrerequisite as UnityEngine.Object;
         }
 
         public void InjectOptionalMinHoverDistance(float minHoverDistance)

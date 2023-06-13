@@ -33,7 +33,7 @@ namespace Oculus.Interaction
         bool GetFingerIsGrabbing(HandFinger finger);
         bool GetFingerIsGrabbingChanged(HandFinger finger, bool targetPinchState);
         float GetFingerGrabScore(HandFinger finger);
-        Vector3 GetWristOffsetLocal();
+        Vector3 GetCenterOffset();
         void Update(IHand hand);
     }
 }

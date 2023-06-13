@@ -11,7 +11,7 @@ using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 
-namespace Meta.WitAi
+namespace Facebook.WitAi
 {
     public static class WitEditorUI
     {
@@ -69,10 +69,7 @@ namespace Meta.WitAi
             EditorGUI.indentLevel++;
             foreach (var field in obj.GetType().GetFields())
             {
-                if (field.IsPublic && !field.IsStatic)
-                {
-                    LayoutKeyLabel(field.Name, field.GetValue(obj).ToString());
-                }
+                LayoutKeyLabel(field.Name, field.GetValue(obj).ToString());
             }
             EditorGUI.indentLevel--;
         }
@@ -85,18 +82,6 @@ namespace Meta.WitAi
             float width = WitStyles.TextButton.CalcSize(content).x + WitStyles.TextButtonPadding * 2f;
             return LayoutButton(content, WitStyles.TextButton, new GUILayoutOption[] { GUILayout.Width(width) });
         }
-
-        public static bool LayoutTextLink(string text)
-        {
-            GUIContent content = new GUIContent(text);
-#if UNITY_2021_3_OR_NEWER
-            return EditorGUILayout.LinkButton(content);
-#else
-            var style = GUI.skin.GetStyle("Label");
-            return LayoutButton(content, style, new GUILayoutOption[] {});
-#endif
-        }
-
         public static bool LayoutIconButton(GUIContent icon)
         {
             return LayoutButton(icon, WitStyles.IconButton, null);
@@ -127,7 +112,7 @@ namespace Meta.WitAi
             return GUILayout.Button(content, style, options);
         }
         // Layout header button
-        public static void LayoutHeaderButton(Texture2D headerTexture, string headerURL, string docsUrl)
+        public static void LayoutHeaderButton(Texture2D headerTexture, string headerURL)
         {
             if (headerTexture != null)
             {
@@ -140,29 +125,13 @@ namespace Meta.WitAi
                 {
                     Application.OpenURL(headerURL);
                 }
-                if (!string.IsNullOrEmpty(docsUrl) && LayoutIconButton(WitStyles.HelpIcon))
-                {
-                    Application.OpenURL(docsUrl);
-                }
                 GUILayout.FlexibleSpace();
+                if (LayoutIconButton(WitStyles.HelpIcon))
+                {
+                    Application.OpenURL(headerURL);
+                }
                 GUILayout.EndHorizontal();
             }
-        }
-        // Layout header button
-        public static void LayoutHeaderText(string text, string headerURL, string docsUrl)
-        {
-            GUILayout.BeginHorizontal();
-            if (GUILayout.Button(text, EditorStyles.boldLabel, GUILayout.ExpandWidth(true)) && !string.IsNullOrEmpty(headerURL))
-            {
-                Application.OpenURL(headerURL);
-            }
-            GUILayout.FlexibleSpace();
-            if (!string.IsNullOrEmpty(docsUrl) && LayoutIconButton(WitStyles.HelpIcon))
-            {
-                Application.OpenURL(docsUrl);
-            }
-            GUILayout.FlexibleSpace();
-            GUILayout.EndHorizontal();
         }
         #endregion
 
@@ -344,7 +313,7 @@ namespace Meta.WitAi
         }
         #endregion
 
-        #region MISCELLANEOUS
+        #region MISCELANEOUS
         public static void LayoutToggle(GUIContent key, ref bool toggleValue, ref bool isUpdated)
         {
             // Simple layout
@@ -419,7 +388,7 @@ namespace Meta.WitAi
         #endregion
 
         #region WINDOW
-        public static void LayoutWindow(string windowTitle, Texture2D windowHeader, string windowHeaderUrl, string windowInfoUrl, Action windowContentLayout, ref Vector2 offset, out Vector2 size)
+        public static void LayoutWindow(string windowTitle, Texture2D windowHeader, string windowHeaderUrl, Action windowContentLayout, ref Vector2 offset, out Vector2 size)
         {
             // Get minimum width
             float minWidth = WitStyles.WindowMinWidth;
@@ -433,7 +402,7 @@ namespace Meta.WitAi
                         // Layout header image
                         if (windowHeader != null)
                         {
-                            LayoutHeaderButton(windowHeader, windowHeaderUrl, windowInfoUrl);
+                            LayoutHeaderButton(windowHeader, windowHeaderUrl);
                         }
                         // Layout header label
                         if (!string.IsNullOrEmpty(windowTitle))

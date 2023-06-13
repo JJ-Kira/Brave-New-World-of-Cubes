@@ -19,6 +19,7 @@
  */
 
 using UnityEngine;
+using UnityEngine.Assertions;
 
 namespace Oculus.Interaction.DistanceReticles
 {
@@ -40,7 +41,7 @@ namespace Oculus.Interaction.DistanceReticles
         }
 
         protected bool _started;
-        protected TReticleData _targetData;
+        private TReticleData _targetData;
         private bool _drawn;
 
         protected abstract IInteractorView Interactor { get; set; }
@@ -49,7 +50,7 @@ namespace Oculus.Interaction.DistanceReticles
         protected virtual void Start()
         {
             this.BeginStart(ref _started);
-            this.AssertField(Interactor, nameof(Interactor));
+            Assert.IsNotNull(Interactor, $"{nameof(InteractorReticle<TReticleData>)} requires an Interactor");
             Hide();
             this.EndStart(ref _started);
         }
@@ -108,24 +109,14 @@ namespace Oculus.Interaction.DistanceReticles
 
         private void InteractableSet(Component interactable)
         {
-            if (interactable != null
-                && interactable.TryGetComponent(out _targetData))
+            if (interactable != null)
             {
-                _drawn = false;
-            }
-            else
-            {
-                _targetData = null;
+                interactable.TryGetComponent(out _targetData);
             }
         }
 
         private void InteractableUnset()
         {
-            if (_drawn)
-            {
-                _drawn = false;
-                Hide();
-            }
             _targetData = default(TReticleData);
         }
 

@@ -27,7 +27,7 @@ namespace Oculus.Interaction
     public class HandPointerPose : MonoBehaviour, IActiveState
     {
         [SerializeField, Interface(typeof(IHand))]
-        private UnityEngine.Object _hand;
+        private MonoBehaviour _hand;
         public IHand Hand { get; private set; }
 
         [SerializeField]
@@ -45,7 +45,7 @@ namespace Oculus.Interaction
         protected virtual void Start()
         {
             this.BeginStart(ref _started);
-            this.AssertField(Hand, nameof(Hand));
+            Assert.IsNotNull(Hand);
             this.EndStart(ref _started);
         }
 
@@ -85,7 +85,7 @@ namespace Oculus.Interaction
 
         public void InjectHand(IHand hand)
         {
-            _hand = hand as UnityEngine.Object;
+            _hand = hand as MonoBehaviour;
             Hand = hand;
         }
 

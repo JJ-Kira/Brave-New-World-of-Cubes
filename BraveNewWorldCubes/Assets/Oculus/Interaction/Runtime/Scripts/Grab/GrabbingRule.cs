@@ -149,7 +149,7 @@ namespace Oculus.Interaction.GrabAPI
 
         public static GrabbingRule DefaultPinchRule { get; } = new GrabbingRule()
         {
-            _thumbRequirement = FingerRequirement.Optional,
+            _thumbRequirement = FingerRequirement.Required,
             _indexRequirement = FingerRequirement.Optional,
             _middleRequirement = FingerRequirement.Optional,
             _ringRequirement = FingerRequirement.Ignored,

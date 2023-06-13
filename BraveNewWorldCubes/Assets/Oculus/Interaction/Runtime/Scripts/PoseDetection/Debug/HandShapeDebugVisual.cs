@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (c) Meta Platforms, Inc. and affiliates.
  * All rights reserved.
  *
@@ -30,10 +30,6 @@ namespace Oculus.Interaction.PoseDetection.Debug
 {
     public class HandShapeDebugVisual : MonoBehaviour
     {
-        [SerializeField, Interface(typeof(IFingerFeatureStateProvider))]
-        private UnityEngine.Object _fingerFeatureStateProvider;
-        private IFingerFeatureStateProvider FingerFeatureStateProvider;
-
         [SerializeField]
         private ShapeRecognizerActiveState _shapeRecognizerActiveState;
 
@@ -68,11 +64,10 @@ namespace Oculus.Interaction.PoseDetection.Debug
 
         protected virtual void Awake()
         {
-            FingerFeatureStateProvider = _fingerFeatureStateProvider as IFingerFeatureStateProvider;
-            this.AssertField(_shapeRecognizerActiveState, nameof(_shapeRecognizerActiveState));
-            this.AssertField(_target, nameof(_target));
-            this.AssertField(_fingerFeatureDebugVisualPrefab, nameof(_fingerFeatureDebugVisualPrefab));
-            this.AssertField(_targetText, nameof(_targetText));
+            Assert.IsNotNull(_shapeRecognizerActiveState);
+            Assert.IsNotNull(_target);
+            Assert.IsNotNull(_fingerFeatureDebugVisualPrefab);
+            Assert.IsNotNull(_targetText);
             _material = _target.material;
 
             _material.color = _lastActiveValue ? _activeColor : _normalColor;
@@ -85,7 +80,8 @@ namespace Oculus.Interaction.PoseDetection.Debug
 
         protected virtual void Start()
         {
-            this.AssertField(FingerFeatureStateProvider, nameof(FingerFeatureStateProvider));
+            bool foundAspect = _shapeRecognizerActiveState.Hand.GetHandAspect(out FingerFeatureStateProvider stateProvider);
+            Assert.IsTrue(foundAspect);
 
             Vector3 fingerOffset = Vector3.zero;
 
@@ -104,7 +100,7 @@ namespace Oculus.Interaction.PoseDetection.Debug
                     var fingerFeatureDebugVisInst = Instantiate(_fingerFeatureDebugVisualPrefab, _fingerFeatureParent);
                     var debugVisComp = fingerFeatureDebugVisInst.GetComponent<FingerFeatureDebugVisual>();
 
-                    debugVisComp.Initialize(g.HandFinger, config, FingerFeatureStateProvider);
+                    debugVisComp.Initialize(g.HandFinger, config, stateProvider);
                     var debugVisTransform = debugVisComp.transform;
                     debugVisTransform.localScale = _fingerFeatureDebugLocalScale;
                     debugVisTransform.localRotation = Quaternion.identity;

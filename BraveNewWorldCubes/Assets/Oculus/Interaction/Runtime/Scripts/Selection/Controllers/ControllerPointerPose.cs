@@ -28,7 +28,7 @@ namespace Oculus.Interaction
     public class ControllerPointerPose : MonoBehaviour, IActiveState
     {
         [SerializeField, Interface(typeof(IController))]
-        private UnityEngine.Object _controller;
+        private MonoBehaviour _controller;
         public IController Controller { get; private set; }
 
         [SerializeField]
@@ -46,7 +46,7 @@ namespace Oculus.Interaction
         protected virtual void Start()
         {
             this.BeginStart(ref _started);
-            this.AssertField(Controller, nameof(Controller));
+            Assert.IsNotNull(Controller);
             this.EndStart(ref _started);
         }
 
@@ -54,7 +54,7 @@ namespace Oculus.Interaction
         {
             if (_started)
             {
-                Controller.WhenUpdated += HandleUpdated;
+                Controller.ControllerUpdated += HandleControllerUpdated;
             }
         }
 
@@ -62,16 +62,16 @@ namespace Oculus.Interaction
         {
             if (_started)
             {
-                Controller.WhenUpdated -= HandleUpdated;
+                Controller.ControllerUpdated -= HandleControllerUpdated;
             }
         }
 
-        private void HandleUpdated()
+        private void HandleControllerUpdated()
         {
             IController controller = Controller;
             if (controller.TryGetPointerPose(out Pose pose))
             {
-                pose.position += pose.rotation * (Controller.Scale * _offset);
+                pose.position += pose.rotation * _offset;
                 transform.SetPose(pose);
                 Active = true;
             }
@@ -85,7 +85,7 @@ namespace Oculus.Interaction
 
         public void InjectController(IController controller)
         {
-            _controller = controller as UnityEngine.Object;
+            _controller = controller as MonoBehaviour;
             Controller = controller;
         }
 

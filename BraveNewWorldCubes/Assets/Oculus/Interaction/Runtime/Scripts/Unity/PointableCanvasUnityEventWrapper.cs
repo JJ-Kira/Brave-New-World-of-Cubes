@@ -32,7 +32,7 @@ namespace Oculus.Interaction
     public class PointableCanvasUnityEventWrapper : MonoBehaviour
     {
         [SerializeField, Interface(typeof(IPointableCanvas))]
-        private UnityEngine.Object _pointableCanvas;
+        private MonoBehaviour _pointableCanvas;
         private IPointableCanvas PointableCanvas;
 
         [SerializeField, Tooltip("Selection and hover events will not be fired while dragging.")]
@@ -117,7 +117,7 @@ namespace Oculus.Interaction
         protected virtual void Start()
         {
             this.BeginStart(ref _started);
-            this.AssertField(PointableCanvas, nameof(PointableCanvas));
+            Assert.IsNotNull(PointableCanvas);
             this.EndStart(ref _started);
         }
 

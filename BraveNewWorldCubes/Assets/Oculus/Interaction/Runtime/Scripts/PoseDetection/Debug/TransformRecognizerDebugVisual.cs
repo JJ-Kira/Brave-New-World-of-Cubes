@@ -32,10 +32,7 @@ namespace Oculus.Interaction.PoseDetection.Debug
         private Hand _hand;
 
         [SerializeField]
-        private TransformFeatureStateProvider _transformFeatureStateProvider;
-
-        [SerializeField]
-        private TransformRecognizerActiveState _transformRecognizerActiveState;
+        private TransformRecognizerActiveState[] _transformRecognizerActiveStates;
 
         [SerializeField]
         private Renderer _target;
@@ -66,11 +63,12 @@ namespace Oculus.Interaction.PoseDetection.Debug
 
         protected virtual void Awake()
         {
-            this.AssertField(_hand, nameof(_hand));
-            this.AssertField(_transformRecognizerActiveState, nameof(_transformRecognizerActiveState));
-            this.AssertField(_target, nameof(_target));
-            this.AssertField(_transformFeatureDebugVisualPrefab, nameof(_transformFeatureDebugVisualPrefab));
-            this.AssertField(_targetText, nameof(_targetText));
+            Assert.IsNotNull(_hand);
+            Assert.IsTrue(_transformRecognizerActiveStates != null &&
+                _transformRecognizerActiveStates.Length > 0);
+            Assert.IsNotNull(_target);
+            Assert.IsNotNull(_transformFeatureDebugVisualPrefab);
+            Assert.IsNotNull(_targetText);
             _material = _target.material;
 
             _material.color = _lastActiveValue ? _activeColor : _normalColor;
@@ -87,27 +85,29 @@ namespace Oculus.Interaction.PoseDetection.Debug
             Vector3 totalDisp = Vector3.zero;
             string shapeNames = "";
 
-            this.AssertField(_transformFeatureStateProvider, nameof(_transformFeatureStateProvider));
-
-            var featureConfigs = _transformRecognizerActiveState.FeatureConfigs;
-            foreach (var featureConfig in featureConfigs)
+            foreach (var activeState in _transformRecognizerActiveStates)
             {
-                var featureDebugVis = Instantiate(_transformFeatureDebugVisualPrefab, _debugVisualParent);
-                var debugVisComp = featureDebugVis.GetComponent<TransformFeatureDebugVisual>();
+                bool foundAspect = activeState.Hand.GetHandAspect(out TransformFeatureStateProvider stateProvider);
+                Assert.IsTrue(foundAspect);
 
-                debugVisComp.Initialize(_transformRecognizerActiveState.Hand.Handedness,
-                    featureConfig,
-                    _transformFeatureStateProvider,
-                    _transformRecognizerActiveState);
-                var debugVisTransform = debugVisComp.transform;
-                debugVisTransform.localScale = _featureDebugLocalScale;
-                debugVisTransform.localRotation = Quaternion.identity;
-                debugVisTransform.localPosition = totalDisp;
+                var featureConfigs = activeState.FeatureConfigs;
+                foreach (var featureConfig in featureConfigs)
+                {
+                    var featureDebugVis = Instantiate(_transformFeatureDebugVisualPrefab, _debugVisualParent);
+                    var debugVisComp = featureDebugVis.GetComponent<TransformFeatureDebugVisual>();
 
-                totalDisp += _featureSpacingVec;
+                    debugVisComp.Initialize(activeState.Hand.Handedness, featureConfig, stateProvider,
+                        activeState);
+                    var debugVisTransform = debugVisComp.transform;
+                    debugVisTransform.localScale = _featureDebugLocalScale;
+                    debugVisTransform.localRotation = Quaternion.identity;
+                    debugVisTransform.localPosition = totalDisp;
 
-                if (!String.IsNullOrEmpty(shapeNames)) { shapeNames += "\n  "; }
-                shapeNames += $"{featureConfig.Mode} {featureConfig.State} ({_transformRecognizerActiveState.Hand.Handedness})";
+                    totalDisp += _featureSpacingVec;
+
+                    if (!String.IsNullOrEmpty(shapeNames)) { shapeNames += "\n  "; }
+                    shapeNames += $"{featureConfig.Mode} {featureConfig.State} ({activeState.Hand.Handedness})";
+                }
             }
 
             _targetText.text = $"{shapeNames}";
@@ -120,9 +120,12 @@ namespace Oculus.Interaction.PoseDetection.Debug
 
         private bool AllActive()
         {
-            if (!_transformRecognizerActiveState.Active)
+            foreach (var activeState in _transformRecognizerActiveStates)
             {
-                return false;
+                if (!activeState.Active)
+                {
+                    return false;
+                }
             }
             return true;
         }

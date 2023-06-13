@@ -25,54 +25,51 @@ using System.Text;
 
 namespace Assets.OVR.Scripts
 {
-    public class Record
-    {
-        public int sortOrder;
-        public string category;
-        public string message;
+	public class Record
+	{
+		public int sortOrder;
+		public string category;
+		public string message;
+		public Record(int order, string cat, string msg)
+		{
+			sortOrder = order;
+			category = cat;
+			message = msg;
+		}
+	}
 
-        public Record(int order, string cat, string msg)
-        {
-            sortOrder = order;
-            category = cat;
-            message = msg;
-        }
-    }
+	public class RangedRecord : Record
+	{
+		public float value;
+		public float min;
+		public float max;
+		public RangedRecord(int order, string cat, string msg, float val, float minVal, float maxVal)
+			: base(order, cat, msg)
+		{
+			value = val;
+			min = minVal;
+			max = maxVal;
+		}
+	}
 
-    public class RangedRecord : Record
-    {
-        public float value;
-        public float min;
-        public float max;
+	public delegate void FixMethodDelegate(UnityEngine.Object obj, bool isLastInSet, int selectedIndex);
 
-        public RangedRecord(int order, string cat, string msg, float val, float minVal, float maxVal)
-            : base(order, cat, msg)
-        {
-            value = val;
-            min = minVal;
-            max = maxVal;
-        }
-    }
+	public class FixRecord : Record
+	{
+		public FixMethodDelegate fixMethod;
+		public UnityEngine.Object targetObject;
+		public string[] buttonNames;
+		public bool editModeRequired;
+		public bool complete;
 
-    public delegate void FixMethodDelegate(UnityEngine.Object obj, bool isLastInSet, int selectedIndex);
-
-    public class FixRecord : Record
-    {
-        public FixMethodDelegate fixMethod;
-        public UnityEngine.Object targetObject;
-        public string[] buttonNames;
-        public bool editModeRequired;
-        public bool complete;
-
-        public FixRecord(int order, string cat, string msg, FixMethodDelegate fix, UnityEngine.Object target,
-            bool editRequired, string[] buttons)
-            : base(order, cat, msg)
-        {
-            buttonNames = buttons;
-            fixMethod = fix;
-            targetObject = target;
-            editModeRequired = editRequired;
-            complete = false;
-        }
-    }
+		public FixRecord(int order, string cat, string msg, FixMethodDelegate fix, UnityEngine.Object target, bool editRequired, string[] buttons)
+			: base(order, cat, msg)
+		{
+			buttonNames = buttons;
+			fixMethod = fix;
+			targetObject = target;
+			editModeRequired = editRequired;
+			complete = false;
+		}
+	}
 }

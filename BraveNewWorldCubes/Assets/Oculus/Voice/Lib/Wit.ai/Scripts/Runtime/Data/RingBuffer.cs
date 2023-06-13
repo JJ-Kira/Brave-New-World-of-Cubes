@@ -9,7 +9,7 @@
 using System;
 using UnityEngine;
 
-namespace Meta.WitAi.Data
+namespace Facebook.WitAi.Data
 {
     public class RingBuffer<T>
     {

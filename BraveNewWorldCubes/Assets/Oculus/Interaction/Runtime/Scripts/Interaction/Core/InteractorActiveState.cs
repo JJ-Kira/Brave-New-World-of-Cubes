@@ -19,6 +19,8 @@
  */
 
 using UnityEngine;
+using UnityEngine.Assertions;
+using UnityEngine.Serialization;
 
 namespace Oculus.Interaction
 {
@@ -31,12 +33,10 @@ namespace Oculus.Interaction
             HasInteractable = 1 << 1,
             IsSelecting = 1 << 2,
             HasSelectedInteractable = 1 << 3,
-            IsNormal = 1 << 4,
-            IsHovering = 1 << 5,
         }
 
         [SerializeField, Interface(typeof(IInteractor))]
-        private UnityEngine.Object _interactor;
+        private MonoBehaviour _interactor;
         private IInteractor Interactor;
 
         [SerializeField]
@@ -58,12 +58,7 @@ namespace Oculus.Interaction
         {
             get
             {
-                if (!isActiveAndEnabled)
-                {
-                    return false;
-                }
-
-                if ((_property & InteractorProperty.HasCandidate) != 0
+                if((_property & InteractorProperty.HasCandidate) != 0
                     && Interactor.HasCandidate)
                 {
                     return true;
@@ -83,16 +78,6 @@ namespace Oculus.Interaction
                 {
                     return true;
                 }
-                if ((_property & InteractorProperty.IsNormal) != 0
-                    && Interactor.State == InteractorState.Normal)
-                {
-                    return true;
-                }
-                if ((_property & InteractorProperty.IsHovering) != 0
-                    && Interactor.State == InteractorState.Hover)
-                {
-                    return true;
-                }
                 return false;
             }
         }
@@ -104,7 +89,7 @@ namespace Oculus.Interaction
 
         protected virtual void Start()
         {
-            this.AssertField(Interactor, nameof(Interactor));
+            Assert.IsNotNull(Interactor);
         }
 
         #region Inject
@@ -116,7 +101,7 @@ namespace Oculus.Interaction
 
         public void InjectInteractor(IInteractor interactor)
         {
-            _interactor = interactor as UnityEngine.Object;
+            _interactor = interactor as MonoBehaviour;
             Interactor = interactor;
         }
         #endregion

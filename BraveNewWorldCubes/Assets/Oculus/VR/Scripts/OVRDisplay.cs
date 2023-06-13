@@ -46,354 +46,349 @@ using Settings = UnityEngine.XR.XRSettings;
 /// </summary>
 public class OVRDisplay
 {
-    /// <summary>
-    /// Contains full fov information per eye
-    /// Under Symmetric Fov mode, UpFov == DownFov and LeftFov == RightFov.
-    /// </summary>
-    public struct EyeFov
-    {
-        public float UpFov;
-        public float DownFov;
-        public float LeftFov;
-        public float RightFov;
-    }
+	/// <summary>
+	/// Contains full fov information per eye
+	/// Under Symmetric Fov mode, UpFov == DownFov and LeftFov == RightFov.
+	/// </summary>
+	public struct EyeFov
+	{
+		public float UpFov;
+		public float DownFov;
+		public float LeftFov;
+		public float RightFov;
+	}
 
-    /// <summary>
-    /// Specifies the size and field-of-view for one eye texture.
-    /// </summary>
-    public struct EyeRenderDesc
-    {
-        /// <summary>
-        /// The horizontal and vertical size of the texture.
-        /// </summary>
-        public Vector2 resolution;
+	/// <summary>
+	/// Specifies the size and field-of-view for one eye texture.
+	/// </summary>
+	public struct EyeRenderDesc
+	{
+		/// <summary>
+		/// The horizontal and vertical size of the texture.
+		/// </summary>
+		public Vector2 resolution;
 
-        /// <summary>
-        /// The angle of the horizontal and vertical field of view in degrees.
-        /// For Symmetric FOV interface compatibility
-        /// Note this includes the fov angle from both sides
-        /// </summary>
-        public Vector2 fov;
+		/// <summary>
+		/// The angle of the horizontal and vertical field of view in degrees.
+		/// For Symmetric FOV interface compatibility
+		/// Note this includes the fov angle from both sides
+		/// </summary>
+		public Vector2 fov;
 
-        /// <summary>
-        /// The full information of field of view in degrees.
-        /// When Asymmetric FOV isn't enabled, this returns the maximum fov angle
-        /// </summary>
-        public EyeFov fullFov;
-    }
+		/// <summary>
+		/// The full information of field of view in degrees.
+		/// When Asymmetric FOV isn't enabled, this returns the maximum fov angle
+		/// </summary>
+		public EyeFov fullFov;
+	}
 
-    /// <summary>
-    /// Contains latency measurements for a single frame of rendering.
-    /// </summary>
-    public struct LatencyData
-    {
-        /// <summary>
-        /// The time it took to render both eyes in seconds.
-        /// </summary>
-        public float render;
+	/// <summary>
+	/// Contains latency measurements for a single frame of rendering.
+	/// </summary>
+	public struct LatencyData
+	{
+		/// <summary>
+		/// The time it took to render both eyes in seconds.
+		/// </summary>
+		public float render;
 
-        /// <summary>
-        /// The time it took to perform TimeWarp in seconds.
-        /// </summary>
-        public float timeWarp;
+		/// <summary>
+		/// The time it took to perform TimeWarp in seconds.
+		/// </summary>
+		public float timeWarp;
 
-        /// <summary>
-        /// The time between the end of TimeWarp and scan-out in seconds.
-        /// </summary>
-        public float postPresent;
+		/// <summary>
+		/// The time between the end of TimeWarp and scan-out in seconds.
+		/// </summary>
+		public float postPresent;
+		public float renderError;
+		public float timeWarpError;
+	}
 
-        public float renderError;
-        public float timeWarpError;
-    }
+	private bool needsConfigureTexture;
+	private EyeRenderDesc[] eyeDescs = new EyeRenderDesc[2];
+	private bool recenterRequested = false;
+	private int recenterRequestedFrameCount = int.MaxValue;
+	private int localTrackingSpaceRecenterCount = 0;
 
-    private bool needsConfigureTexture;
-    private EyeRenderDesc[] eyeDescs = new EyeRenderDesc[2];
-    private bool recenterRequested = false;
-    private int recenterRequestedFrameCount = int.MaxValue;
-    private int localTrackingSpaceRecenterCount = 0;
+	/// <summary>
+	/// Creates an instance of OVRDisplay. Called by OVRManager.
+	/// </summary>
+	public OVRDisplay()
+	{
+		UpdateTextures();
+	}
 
-    /// <summary>
-    /// Creates an instance of OVRDisplay. Called by OVRManager.
-    /// </summary>
-    public OVRDisplay()
-    {
-        UpdateTextures();
-    }
+	/// <summary>
+	/// Updates the internal state of the OVRDisplay. Called by OVRManager.
+	/// </summary>
+	public void Update()
+	{
+		UpdateTextures();
 
-    /// <summary>
-    /// Updates the internal state of the OVRDisplay. Called by OVRManager.
-    /// </summary>
-    public void Update()
-    {
-        UpdateTextures();
+		if (recenterRequested && Time.frameCount > recenterRequestedFrameCount)
+		{
+			Debug.Log("Recenter event detected");
+			if (RecenteredPose != null)
+			{
+				RecenteredPose();
+			}
+			recenterRequested = false;
+			recenterRequestedFrameCount = int.MaxValue;
+		}
 
-        if (recenterRequested && Time.frameCount > recenterRequestedFrameCount)
-        {
-            Debug.Log("Recenter event detected");
-            if (RecenteredPose != null)
-            {
-                RecenteredPose();
-            }
+		if (OVRPlugin.GetSystemHeadsetType() >= OVRPlugin.SystemHeadset.Oculus_Quest &&
+			OVRPlugin.GetSystemHeadsetType() < OVRPlugin.SystemHeadset.Rift_DK1) // all Oculus Standalone headsets
+		{
+			int recenterCount = OVRPlugin.GetLocalTrackingSpaceRecenterCount();
+			if (localTrackingSpaceRecenterCount != recenterCount)
+			{
+				Debug.Log("Recenter event detected");
+				if (RecenteredPose != null)
+				{
+					RecenteredPose();
+				}
+				localTrackingSpaceRecenterCount = recenterCount;
+			}
+		}
+	}
 
-            recenterRequested = false;
-            recenterRequestedFrameCount = int.MaxValue;
-        }
+	/// <summary>
+	/// Occurs when the head pose is reset.
+	/// </summary>
+	public event System.Action RecenteredPose;
 
-        if (OVRPlugin.GetSystemHeadsetType() >= OVRPlugin.SystemHeadset.Oculus_Quest &&
-            OVRPlugin.GetSystemHeadsetType() < OVRPlugin.SystemHeadset.Rift_DK1) // all Oculus Standalone headsets
-        {
-            int recenterCount = OVRPlugin.GetLocalTrackingSpaceRecenterCount();
-            if (localTrackingSpaceRecenterCount != recenterCount)
-            {
-                Debug.Log("Recenter event detected");
-                if (RecenteredPose != null)
-                {
-                    RecenteredPose();
-                }
-
-                localTrackingSpaceRecenterCount = recenterCount;
-            }
-        }
-    }
-
-    /// <summary>
-    /// Occurs when the head pose is reset.
-    /// </summary>
-    public event System.Action RecenteredPose;
-
-    /// <summary>
-    /// Recenters the head pose.
-    /// </summary>
-    public void RecenterPose()
-    {
+	/// <summary>
+	/// Recenters the head pose.
+	/// </summary>
+	public void RecenterPose()
+	{
 #if USING_XR_SDK
-        XRInputSubsystem currentInputSubsystem = OVRManager.GetCurrentInputSubsystem();
-        if (currentInputSubsystem != null)
-        {
-            currentInputSubsystem.TryRecenter();
-        }
+		XRInputSubsystem currentInputSubsystem = OVRManager.GetCurrentInputSubsystem();
+		if (currentInputSubsystem != null)
+		{
+			currentInputSubsystem.TryRecenter();
+		}
 #elif !REQUIRES_XR_SDK
 #pragma warning disable 618
-        InputTracking.Recenter();
+		InputTracking.Recenter();
 #pragma warning restore 618
 #endif
 
-        // The current poses are cached for the current frame and won't be updated immediately
-        // after UnityEngine.VR.InputTracking.Recenter(). So we need to wait until next frame
-        // to trigger the RecenteredPose delegate. The application could expect the correct pose
-        // when the RecenteredPose delegate get called.
-        recenterRequested = true;
-        recenterRequestedFrameCount = Time.frameCount;
+		// The current poses are cached for the current frame and won't be updated immediately
+		// after UnityEngine.VR.InputTracking.Recenter(). So we need to wait until next frame
+		// to trigger the RecenteredPose delegate. The application could expect the correct pose
+		// when the RecenteredPose delegate get called.
+		recenterRequested = true;
+		recenterRequestedFrameCount = Time.frameCount;
 
 #if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN
-        OVRMixedReality.RecenterPose();
+		OVRMixedReality.RecenterPose();
 #endif
-    }
+	}
 
-    /// <summary>
-    /// Gets the current linear acceleration of the head.
-    /// </summary>
-    public Vector3 acceleration
-    {
-        get
-        {
-            if (!OVRManager.isHmdPresent)
-                return Vector3.zero;
+	/// <summary>
+	/// Gets the current linear acceleration of the head.
+	/// </summary>
+	public Vector3 acceleration
+	{
+		get {
+			if (!OVRManager.isHmdPresent)
+				return Vector3.zero;
 
-            Vector3 retVec = Vector3.zero;
-            if (OVRNodeStateProperties.GetNodeStatePropertyVector3(Node.Head, NodeStatePropertyType.Acceleration,
-                    OVRPlugin.Node.Head, OVRPlugin.Step.Render, out retVec))
-                return retVec;
-            return Vector3.zero;
-        }
-    }
+			Vector3 retVec = Vector3.zero;
+			if (OVRNodeStateProperties.GetNodeStatePropertyVector3(Node.Head, NodeStatePropertyType.Acceleration, OVRPlugin.Node.Head, OVRPlugin.Step.Render, out retVec))
+				return retVec;
+			return Vector3.zero;
+		}
+	}
 
-    /// <summary>
-    /// Gets the current angular acceleration of the head in radians per second per second about each axis.
-    /// </summary>
-    public Vector3 angularAcceleration
-    {
-        get
-        {
-            if (!OVRManager.isHmdPresent)
-                return Vector3.zero;
+	/// <summary>
+	/// Gets the current angular acceleration of the head in radians per second per second about each axis.
+	/// </summary>
+	public Vector3 angularAcceleration
+	{
+		get
+		{
+			if (!OVRManager.isHmdPresent)
+				return Vector3.zero;
 
-            Vector3 retVec = Vector3.zero;
-            if (OVRNodeStateProperties.GetNodeStatePropertyVector3(Node.Head, NodeStatePropertyType.AngularAcceleration,
-                    OVRPlugin.Node.Head, OVRPlugin.Step.Render, out retVec))
-                return retVec;
-            return Vector3.zero;
-        }
-    }
+			Vector3 retVec = Vector3.zero;
+			if (OVRNodeStateProperties.GetNodeStatePropertyVector3(Node.Head, NodeStatePropertyType.AngularAcceleration, OVRPlugin.Node.Head, OVRPlugin.Step.Render, out retVec))
+				return retVec;
+			return Vector3.zero;
 
-    /// <summary>
-    /// Gets the current linear velocity of the head in meters per second.
-    /// </summary>
-    public Vector3 velocity
-    {
-        get
-        {
-            if (!OVRManager.isHmdPresent)
-                return Vector3.zero;
+		}
+	}
 
-            Vector3 retVec = Vector3.zero;
-            if (OVRNodeStateProperties.GetNodeStatePropertyVector3(Node.Head, NodeStatePropertyType.Velocity,
-                    OVRPlugin.Node.Head, OVRPlugin.Step.Render, out retVec))
-                return retVec;
-            return Vector3.zero;
-        }
-    }
+	/// <summary>
+	/// Gets the current linear velocity of the head in meters per second.
+	/// </summary>
+	public Vector3 velocity
+	{
+		get
+		{
+			if (!OVRManager.isHmdPresent)
+				return Vector3.zero;
 
-    /// <summary>
-    /// Gets the current angular velocity of the head in radians per second about each axis.
-    /// </summary>
-    public Vector3 angularVelocity
-    {
-        get
-        {
-            if (!OVRManager.isHmdPresent)
-                return Vector3.zero;
+			Vector3 retVec = Vector3.zero;
+			if (OVRNodeStateProperties.GetNodeStatePropertyVector3(Node.Head, NodeStatePropertyType.Velocity, OVRPlugin.Node.Head, OVRPlugin.Step.Render, out retVec))
+				return retVec;
+			return Vector3.zero;
+		}
+	}
 
-            Vector3 retVec = Vector3.zero;
-            if (OVRNodeStateProperties.GetNodeStatePropertyVector3(Node.Head, NodeStatePropertyType.AngularVelocity,
-                    OVRPlugin.Node.Head, OVRPlugin.Step.Render, out retVec))
-                return retVec;
-            return Vector3.zero;
-        }
-    }
+	/// <summary>
+	/// Gets the current angular velocity of the head in radians per second about each axis.
+	/// </summary>
+	public Vector3 angularVelocity
+	{
+		get {
+			if (!OVRManager.isHmdPresent)
+				return Vector3.zero;
 
-    /// <summary>
-    /// Gets the resolution and field of view for the given eye.
-    /// </summary>
-    public EyeRenderDesc GetEyeRenderDesc(UnityEngine.XR.XRNode eye)
-    {
-        return eyeDescs[(int)eye];
-    }
+			Vector3 retVec = Vector3.zero;
+			if (OVRNodeStateProperties.GetNodeStatePropertyVector3(Node.Head, NodeStatePropertyType.AngularVelocity, OVRPlugin.Node.Head, OVRPlugin.Step.Render, out retVec))
+				return retVec;
+			return Vector3.zero;
+		}
+	}
 
-    /// <summary>
-    /// Gets the current measured latency values.
-    /// </summary>
-    public LatencyData latency
-    {
-        get
-        {
-            if (!OVRManager.isHmdPresent)
-                return new LatencyData();
+	/// <summary>
+	/// Gets the resolution and field of view for the given eye.
+	/// </summary>
+	public EyeRenderDesc GetEyeRenderDesc(UnityEngine.XR.XRNode eye)
+	{
+		return eyeDescs[(int)eye];
+	}
 
-            string latency = OVRPlugin.latency;
+	/// <summary>
+	/// Gets the current measured latency values.
+	/// </summary>
+	public LatencyData latency
+	{
+		get {
+			if (!OVRManager.isHmdPresent)
+				return new LatencyData();
 
-            var r = new Regex(
-                "Render: ([0-9]+[.][0-9]+)ms, TimeWarp: ([0-9]+[.][0-9]+)ms, PostPresent: ([0-9]+[.][0-9]+)ms",
-                RegexOptions.None);
+			string latency = OVRPlugin.latency;
 
-            var ret = new LatencyData();
+			var r = new Regex("Render: ([0-9]+[.][0-9]+)ms, TimeWarp: ([0-9]+[.][0-9]+)ms, PostPresent: ([0-9]+[.][0-9]+)ms", RegexOptions.None);
 
-            Match match = r.Match(latency);
-            if (match.Success)
-            {
-                ret.render = float.Parse(match.Groups[1].Value);
-                ret.timeWarp = float.Parse(match.Groups[2].Value);
-                ret.postPresent = float.Parse(match.Groups[3].Value);
-            }
+			var ret = new LatencyData();
 
-            return ret;
-        }
-    }
+			Match match = r.Match(latency);
+			if (match.Success)
+			{
+				ret.render = float.Parse(match.Groups[1].Value);
+				ret.timeWarp = float.Parse(match.Groups[2].Value);
+				ret.postPresent = float.Parse(match.Groups[3].Value);
+			}
 
-    /// <summary>
-    /// Gets application's frame rate reported by oculus plugin
-    /// </summary>
-    public float appFramerate
-    {
-        get
-        {
-            if (!OVRManager.isHmdPresent)
-                return 0;
+			return ret;
+		}
+	}
 
-            return OVRPlugin.GetAppFramerate();
-        }
-    }
+	/// <summary>
+	/// Gets application's frame rate reported by oculus plugin
+	/// </summary>
+	public float appFramerate
+	{
+		get
+		{
+			if (!OVRManager.isHmdPresent)
+				return 0;
 
-    /// <summary>
-    /// Gets the recommended MSAA level for optimal quality/performance the current device.
-    /// </summary>
-    public int recommendedMSAALevel
-    {
-        get
-        {
-            int result = OVRPlugin.recommendedMSAALevel;
+			return OVRPlugin.GetAppFramerate();
+		}
+	}
 
-            if (result == 1)
-                result = 0;
+	/// <summary>
+	/// Gets the recommended MSAA level for optimal quality/performance the current device.
+	/// </summary>
+	public int recommendedMSAALevel
+	{
+		get
+		{
+			int result = OVRPlugin.recommendedMSAALevel;
 
-            return result;
-        }
-    }
+			if (result == 1)
+				result = 0;
 
-    /// <summary>
-    /// Gets the list of available display frequencies supported by this hardware.
-    /// </summary>
-    public float[] displayFrequenciesAvailable
-    {
-        get { return OVRPlugin.systemDisplayFrequenciesAvailable; }
-    }
+			return result;
+		}
+	}
 
-    /// <summary>
-    /// Gets and sets the current display frequency.
-    /// </summary>
-    public float displayFrequency
-    {
-        get { return OVRPlugin.systemDisplayFrequency; }
-        set { OVRPlugin.systemDisplayFrequency = value; }
-    }
+	/// <summary>
+	/// Gets the list of available display frequencies supported by this hardware.
+	/// </summary>
+	public float[] displayFrequenciesAvailable
+	{
+		get { return OVRPlugin.systemDisplayFrequenciesAvailable; }
+	}
 
-    private void UpdateTextures()
-    {
-        ConfigureEyeDesc(Node.LeftEye);
-        ConfigureEyeDesc(Node.RightEye);
-    }
+	/// <summary>
+	/// Gets and sets the current display frequency.
+	/// </summary>
+	public float displayFrequency
+	{
+		get
+		{
+			return OVRPlugin.systemDisplayFrequency;
+		}
+		set
+		{
+			OVRPlugin.systemDisplayFrequency = value;
+		}
+	}
 
-    private void ConfigureEyeDesc(Node eye)
-    {
-        if (!OVRManager.isHmdPresent)
-            return;
+	private void UpdateTextures()
+	{
+		ConfigureEyeDesc(Node.LeftEye);
+		ConfigureEyeDesc(Node.RightEye);
+	}
 
-        int eyeTextureWidth = Settings.eyeTextureWidth;
-        int eyeTextureHeight = Settings.eyeTextureHeight;
+	private void ConfigureEyeDesc(Node eye)
+	{
+		if (!OVRManager.isHmdPresent)
+			return;
 
-        eyeDescs[(int)eye] = new EyeRenderDesc();
-        eyeDescs[(int)eye].resolution = new Vector2(eyeTextureWidth, eyeTextureHeight);
+		int eyeTextureWidth = Settings.eyeTextureWidth;
+		int eyeTextureHeight = Settings.eyeTextureHeight;
 
-        OVRPlugin.Frustumf2 frust;
-        if (OVRPlugin.GetNodeFrustum2((OVRPlugin.Node)eye, out frust))
-        {
-            eyeDescs[(int)eye].fullFov.LeftFov = Mathf.Rad2Deg * Mathf.Atan(frust.Fov.LeftTan);
-            eyeDescs[(int)eye].fullFov.RightFov = Mathf.Rad2Deg * Mathf.Atan(frust.Fov.RightTan);
-            eyeDescs[(int)eye].fullFov.UpFov = Mathf.Rad2Deg * Mathf.Atan(frust.Fov.UpTan);
-            eyeDescs[(int)eye].fullFov.DownFov = Mathf.Rad2Deg * Mathf.Atan(frust.Fov.DownTan);
-        }
-        else
-        {
-            OVRPlugin.Frustumf frustOld = OVRPlugin.GetEyeFrustum((OVRPlugin.Eye)eye);
-            eyeDescs[(int)eye].fullFov.LeftFov = Mathf.Rad2Deg * frustOld.fovX * 0.5f;
-            eyeDescs[(int)eye].fullFov.RightFov = Mathf.Rad2Deg * frustOld.fovX * 0.5f;
-            eyeDescs[(int)eye].fullFov.UpFov = Mathf.Rad2Deg * frustOld.fovY * 0.5f;
-            eyeDescs[(int)eye].fullFov.DownFov = Mathf.Rad2Deg * frustOld.fovY * 0.5f;
-        }
+		eyeDescs[(int)eye] = new EyeRenderDesc();
+		eyeDescs[(int)eye].resolution = new Vector2(eyeTextureWidth, eyeTextureHeight);
 
-        // Symmetric Fov uses the maximum fov angle
-        float maxFovX = Mathf.Max(eyeDescs[(int)eye].fullFov.LeftFov, eyeDescs[(int)eye].fullFov.RightFov);
-        float maxFovY = Mathf.Max(eyeDescs[(int)eye].fullFov.UpFov, eyeDescs[(int)eye].fullFov.DownFov);
-        eyeDescs[(int)eye].fov.x = maxFovX * 2.0f;
-        eyeDescs[(int)eye].fov.y = maxFovY * 2.0f;
+		OVRPlugin.Frustumf2 frust;
+		if (OVRPlugin.GetNodeFrustum2((OVRPlugin.Node)eye, out frust))
+		{
+			eyeDescs[(int)eye].fullFov.LeftFov = Mathf.Rad2Deg * Mathf.Atan(frust.Fov.LeftTan);
+			eyeDescs[(int)eye].fullFov.RightFov = Mathf.Rad2Deg * Mathf.Atan(frust.Fov.RightTan);
+			eyeDescs[(int)eye].fullFov.UpFov = Mathf.Rad2Deg * Mathf.Atan(frust.Fov.UpTan);
+			eyeDescs[(int)eye].fullFov.DownFov = Mathf.Rad2Deg * Mathf.Atan(frust.Fov.DownTan);
+		}
+		else
+		{
+			OVRPlugin.Frustumf frustOld = OVRPlugin.GetEyeFrustum((OVRPlugin.Eye)eye);
+			eyeDescs[(int)eye].fullFov.LeftFov = Mathf.Rad2Deg * frustOld.fovX * 0.5f;
+			eyeDescs[(int)eye].fullFov.RightFov = Mathf.Rad2Deg * frustOld.fovX * 0.5f;
+			eyeDescs[(int)eye].fullFov.UpFov = Mathf.Rad2Deg * frustOld.fovY * 0.5f;
+			eyeDescs[(int)eye].fullFov.DownFov = Mathf.Rad2Deg * frustOld.fovY * 0.5f;
+		}
 
-        if (!OVRPlugin.AsymmetricFovEnabled)
-        {
-            eyeDescs[(int)eye].fullFov.LeftFov = maxFovX;
-            eyeDescs[(int)eye].fullFov.RightFov = maxFovX;
+		// Symmetric Fov uses the maximum fov angle
+		float maxFovX = Mathf.Max(eyeDescs[(int)eye].fullFov.LeftFov, eyeDescs[(int)eye].fullFov.RightFov);
+		float maxFovY = Mathf.Max(eyeDescs[(int)eye].fullFov.UpFov, eyeDescs[(int)eye].fullFov.DownFov);
+		eyeDescs[(int)eye].fov.x = maxFovX * 2.0f;
+		eyeDescs[(int)eye].fov.y = maxFovY * 2.0f;
 
-            eyeDescs[(int)eye].fullFov.UpFov = maxFovY;
-            eyeDescs[(int)eye].fullFov.DownFov = maxFovY;
-        }
-    }
+		if (!OVRPlugin.AsymmetricFovEnabled)
+		{
+			eyeDescs[(int)eye].fullFov.LeftFov = maxFovX;
+			eyeDescs[(int)eye].fullFov.RightFov = maxFovX;
+
+			eyeDescs[(int)eye].fullFov.UpFov = maxFovY;
+			eyeDescs[(int)eye].fullFov.DownFov = maxFovY;
+		}
+	}
 }

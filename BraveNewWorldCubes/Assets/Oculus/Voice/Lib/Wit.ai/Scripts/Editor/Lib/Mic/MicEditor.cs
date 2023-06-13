@@ -6,10 +6,9 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-using Meta.WitAi.Lib;
 using UnityEditor;
 
-namespace Meta.WitAi.Lib
+namespace Facebook.WitAi.Lib
 {
     [CustomEditor(typeof(Mic))]
     public class MicEditor : Editor

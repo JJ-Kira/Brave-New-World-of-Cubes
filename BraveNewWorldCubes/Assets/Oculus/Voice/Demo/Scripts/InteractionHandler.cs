@@ -18,9 +18,8 @@
  * limitations under the License.
  */
 
-using Meta.WitAi;
-using Meta.WitAi.Json;
-using Meta.WitAi.Requests;
+using Facebook.WitAi;
+using Facebook.WitAi.Lib;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -46,35 +45,33 @@ namespace Oculus.Voice.Demo
         private void OnEnable()
         {
             textArea.text = freshStateText;
-            appVoiceExperience.VoiceEvents.OnSend.AddListener(OnSend);
-            appVoiceExperience.VoiceEvents.OnPartialTranscription.AddListener(OnRequestTranscript);
-            appVoiceExperience.VoiceEvents.OnFullTranscription.AddListener(OnRequestTranscript);
-            appVoiceExperience.VoiceEvents.OnStartListening.AddListener(OnListenStart);
-            appVoiceExperience.VoiceEvents.OnStoppedListening.AddListener(OnListenStop);
-            appVoiceExperience.VoiceEvents.OnStoppedListeningDueToDeactivation.AddListener(OnListenForcedStop);
-            appVoiceExperience.VoiceEvents.OnStoppedListeningDueToInactivity.AddListener(OnListenForcedStop);
-            appVoiceExperience.VoiceEvents.OnResponse.AddListener(OnRequestResponse);
-            appVoiceExperience.VoiceEvents.OnError.AddListener(OnRequestError);
+            appVoiceExperience.events.OnRequestCreated.AddListener(OnRequestStarted);
+            appVoiceExperience.events.OnPartialTranscription.AddListener(OnRequestTranscript);
+            appVoiceExperience.events.OnFullTranscription.AddListener(OnRequestTranscript);
+            appVoiceExperience.events.OnStartListening.AddListener(OnListenStart);
+            appVoiceExperience.events.OnStoppedListening.AddListener(OnListenStop);
+            appVoiceExperience.events.OnStoppedListeningDueToDeactivation.AddListener(OnListenForcedStop);
+            appVoiceExperience.events.OnResponse.AddListener(OnRequestResponse);
+            appVoiceExperience.events.OnError.AddListener(OnRequestError);
         }
         // Remove delegates
         private void OnDisable()
         {
-            appVoiceExperience.VoiceEvents.OnSend.RemoveListener(OnSend);
-            appVoiceExperience.VoiceEvents.OnPartialTranscription.RemoveListener(OnRequestTranscript);
-            appVoiceExperience.VoiceEvents.OnFullTranscription.RemoveListener(OnRequestTranscript);
-            appVoiceExperience.VoiceEvents.OnStartListening.RemoveListener(OnListenStart);
-            appVoiceExperience.VoiceEvents.OnStoppedListening.RemoveListener(OnListenStop);
-            appVoiceExperience.VoiceEvents.OnStoppedListeningDueToDeactivation.RemoveListener(OnListenForcedStop);
-            appVoiceExperience.VoiceEvents.OnStoppedListeningDueToInactivity.RemoveListener(OnListenForcedStop);
-            appVoiceExperience.VoiceEvents.OnResponse.RemoveListener(OnRequestResponse);
-            appVoiceExperience.VoiceEvents.OnError.RemoveListener(OnRequestError);
+            appVoiceExperience.events.OnRequestCreated.RemoveListener(OnRequestStarted);
+            appVoiceExperience.events.OnPartialTranscription.RemoveListener(OnRequestTranscript);
+            appVoiceExperience.events.OnFullTranscription.RemoveListener(OnRequestTranscript);
+            appVoiceExperience.events.OnStartListening.RemoveListener(OnListenStart);
+            appVoiceExperience.events.OnStoppedListening.RemoveListener(OnListenStop);
+            appVoiceExperience.events.OnStoppedListeningDueToDeactivation.RemoveListener(OnListenForcedStop);
+            appVoiceExperience.events.OnResponse.RemoveListener(OnRequestResponse);
+            appVoiceExperience.events.OnError.RemoveListener(OnRequestError);
         }
 
         // Request began
-        private void OnSend(VoiceServiceRequest request)
+        private void OnRequestStarted(WitRequest r)
         {
             // Store json on completion
-            if (showJson && request is WitRequest witRequest) witRequest.onRawResponse = (response) => textArea.text = response;
+            if (showJson) r.onRawResponse = (response) => textArea.text = response;
             // Begin
             _active = true;
         }

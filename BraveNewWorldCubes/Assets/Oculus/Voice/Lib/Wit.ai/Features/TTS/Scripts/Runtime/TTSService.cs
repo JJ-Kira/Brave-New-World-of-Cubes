@@ -11,14 +11,22 @@ using System.Collections;
 using System.Text;
 using System.Security.Cryptography;
 using System.Collections.Generic;
-using Meta.WitAi.Requests;
 using UnityEngine;
-using Meta.WitAi.TTS.Data;
-using Meta.WitAi.TTS.Events;
-using Meta.WitAi.TTS.Interfaces;
+using Facebook.WitAi.TTS.Data;
+using Facebook.WitAi.TTS.Events;
+using Facebook.WitAi.TTS.Interfaces;
+using Facebook.WitAi.Utilities;
 
-namespace Meta.WitAi.TTS
+namespace Facebook.WitAi.TTS
 {
+    public enum TTSLogType
+    {
+        Info = 0,
+        Warning = 1,
+        Error = 2,
+        None = 3
+    }
+
     public abstract class TTSService : MonoBehaviour
     {
         #region SETUP
@@ -51,10 +59,8 @@ namespace Meta.WitAi.TTS
         // Handles TTS voice presets
         public abstract ITTSVoiceProvider VoiceProvider { get; }
 
-        /// <summary>
-        /// Returns error if invalid
-        /// </summary>
-        public virtual string GetInvalidError()
+        // Ensure valid, if not return why
+        public virtual string IsValid()
         {
             if (WebHandler == null)
             {
@@ -66,6 +72,11 @@ namespace Meta.WitAi.TTS
             }
             return string.Empty;
         }
+
+        /// <summary>
+        /// Level of logs to be reported
+        /// </summary>
+        public TTSLogType LogLevel = TTSLogType.None;
 
         // Handles TTS events
         public TTSServiceEvents Events => _events;
@@ -82,10 +93,10 @@ namespace Meta.WitAi.TTS
         // Log if invalid
         protected virtual void OnEnable()
         {
-            string validError = GetInvalidError();
+            string validError = IsValid();
             if (!string.IsNullOrEmpty(validError))
             {
-                VLog.W(validError);
+                Log(validError, TTSLogType.Error);
             }
         }
         // Remove delegates
@@ -122,8 +133,6 @@ namespace Meta.WitAi.TTS
                 WebHandler.WebStreamEvents.OnStreamCancel.AddListener(OnWebStreamCancel);
                 WebHandler.WebStreamEvents.OnStreamReady.AddListener(OnWebStreamReady);
                 WebHandler.WebStreamEvents.OnStreamError.AddListener(OnWebStreamError);
-                WebHandler.WebStreamEvents.OnStreamClipUpdate.AddListener(OnStreamClipUpdated);
-                WebHandler.WebStreamEvents.OnStreamComplete.AddListener(OnWebStreamComplete);
                 WebHandler.WebDownloadEvents.OnDownloadBegin.AddListener(OnWebDownloadBegin);
                 WebHandler.WebDownloadEvents.OnDownloadCancel.AddListener(OnWebDownloadCancel);
                 WebHandler.WebDownloadEvents.OnDownloadSuccess.AddListener(OnWebDownloadSuccess);
@@ -158,8 +167,6 @@ namespace Meta.WitAi.TTS
                 WebHandler.WebStreamEvents.OnStreamCancel.RemoveListener(OnWebStreamCancel);
                 WebHandler.WebStreamEvents.OnStreamReady.RemoveListener(OnWebStreamReady);
                 WebHandler.WebStreamEvents.OnStreamError.RemoveListener(OnWebStreamError);
-                WebHandler.WebStreamEvents.OnStreamClipUpdate.RemoveListener(OnStreamClipUpdated);
-                WebHandler.WebStreamEvents.OnStreamComplete.RemoveListener(OnWebStreamComplete);
                 WebHandler.WebDownloadEvents.OnDownloadBegin.RemoveListener(OnWebDownloadBegin);
                 WebHandler.WebDownloadEvents.OnDownloadCancel.RemoveListener(OnWebDownloadCancel);
                 WebHandler.WebDownloadEvents.OnDownloadSuccess.RemoveListener(OnWebDownloadSuccess);
@@ -179,9 +186,9 @@ namespace Meta.WitAi.TTS
         }
 
         /// <summary>
-        /// Get clip log data
+        /// Logs for TTSService
         /// </summary>
-        protected virtual string GetClipLog(string logMessage, TTSClipData clipData)
+        protected virtual void LogClip(string logMessage, TTSClipData clipData, TTSLogType logType = TTSLogType.Info)
         {
             StringBuilder builder = new StringBuilder();
             builder.AppendLine(logMessage);
@@ -204,10 +211,34 @@ namespace Meta.WitAi.TTS
                     }
                 }
                 builder.AppendLine($"Cache: {cacheLocation}");
-                builder.AppendLine($"Type: {clipData.audioType}");
-                builder.AppendLine($"Length: {(clipData.clip == null ? "NULL" : clipData.clip.length.ToString("0.000") + "secs")}");
             }
-            return builder.ToString();
+            Log(builder.ToString(), logType);
+        }
+        /// <summary>
+        /// Logs for TTSService
+        /// </summary>
+        protected virtual void Log(string logMessage, TTSLogType logType = TTSLogType.Info)
+        {
+            // Ignore
+            if (LogLevel == TTSLogType.None || LogLevel > logType)
+            {
+                return;
+            }
+
+            // Log
+            string final = $"{GetType().Name} {logType.ToString()} - {logMessage}";
+            if (logType == TTSLogType.Error)
+            {
+                Debug.LogError(final);
+            }
+            else if (logType == TTSLogType.Warning)
+            {
+                Debug.LogWarning(final);
+            }
+            else
+            {
+                Debug.Log(final);
+            }
         }
         #endregion
 
@@ -294,7 +325,6 @@ namespace Meta.WitAi.TTS
             clipData = new TTSClipData()
             {
                 clipID = clipID,
-                audioType = GetAudioType(),
                 textToSpeak = textToSpeak,
                 voiceSettings = voiceSettings,
                 diskCacheSettings = diskCacheSettings,
@@ -306,11 +336,6 @@ namespace Meta.WitAi.TTS
             // Return generated clip
             return clipData;
         }
-        // Get audio type
-        protected virtual AudioType GetAudioType()
-        {
-            return AudioType.WAV;
-        }
         // Set clip state
         protected virtual void SetClipLoadState(TTSClipData clipData, TTSClipLoadState loadState)
         {
@@ -320,6 +345,9 @@ namespace Meta.WitAi.TTS
         #endregion
 
         #region LOAD
+        // Cancel warning
+        public const string CANCEL_WARNING = "Canceled";
+
         // TTS Request options
         public TTSClipData Load(string textToSpeak, Action<TTSClipData, string> onStreamReady = null) => Load(textToSpeak, null, null, null, onStreamReady);
         public TTSClipData Load(string textToSpeak, string presetVoiceId, Action<TTSClipData, string> onStreamReady = null) => Load(textToSpeak, null, GetPresetVoiceSettings(presetVoiceId), null, onStreamReady);
@@ -344,7 +372,7 @@ namespace Meta.WitAi.TTS
             TTSClipData clipData = CreateClipData(textToSpeak, clipID, voiceSettings, diskCacheSettings);
             if (clipData == null)
             {
-                VLog.E("No clip provided");
+                Log("No clip provided", TTSLogType.Error);
                 onStreamReady?.Invoke(clipData, "No clip provided");
                 return null;
             }
@@ -375,27 +403,7 @@ namespace Meta.WitAi.TTS
             // Add to runtime cache if possible
             if (RuntimeCacheHandler != null)
             {
-                if (!RuntimeCacheHandler.AddClip(clipData))
-                {
-                    // Add callback
-                    if (onStreamReady != null)
-                    {
-                        // Call once ready
-                        if (clipData.loadState == TTSClipLoadState.Preparing)
-                        {
-                            clipData.onPlaybackReady += (e) => onStreamReady(clipData, e);
-                        }
-                        // Call after return
-                        else
-                        {
-                            CoroutineUtility.StartCoroutine(CallAfterAMoment(() => onStreamReady(clipData,
-                                clipData.loadState == TTSClipLoadState.Loaded ? string.Empty : "Error")));
-                        }
-                    }
-
-                    // Return clip
-                    return clipData;
-                }
+                RuntimeCacheHandler.AddClip(clipData);
             }
             // Load begin
             else
@@ -404,7 +412,7 @@ namespace Meta.WitAi.TTS
             }
 
             // Add on ready delegate
-            clipData.onPlaybackReady += (error) => onStreamReady?.Invoke(clipData, error);
+            clipData.onPlaybackReady += (error) => onStreamReady(clipData, error);
 
             // Wait a moment and load
             CoroutineUtility.StartCoroutine(CallAfterAMoment(() =>
@@ -435,7 +443,7 @@ namespace Meta.WitAi.TTS
                     DownloadToDiskCache(clipData, (clipData2, downloadPath, error) =>
                     {
                         // Download was canceled before starting
-                        if (string.Equals(error, WitConstants.CANCEL_ERROR))
+                        if (string.Equals(error, CANCEL_WARNING))
                         {
                             OnWebStreamBegin(clipData);
                             OnWebStreamCancel(clipData);
@@ -493,7 +501,7 @@ namespace Meta.WitAi.TTS
             SetClipLoadState(clipData, TTSClipLoadState.Preparing);
 
             // Begin load
-            VLog.D(GetClipLog("Load Clip", clipData));
+            LogClip($"Load Clip", clipData);
             Events?.OnClipCreated?.Invoke(clipData);
         }
         // Handle begin of disk cache streaming
@@ -502,7 +510,7 @@ namespace Meta.WitAi.TTS
         private void OnStreamBegin(TTSClipData clipData, bool fromDisk)
         {
             // Callback delegate
-            VLog.D(GetClipLog($"{(fromDisk ? "Disk" : "Web")} Stream Begin", clipData));
+            LogClip($"{(fromDisk ? "Disk" : "Web")} Stream Begin", clipData);
             Events?.Stream?.OnStreamBegin?.Invoke(clipData);
         }
         // Handle successful completion of disk cache streaming
@@ -511,31 +519,17 @@ namespace Meta.WitAi.TTS
         private void OnStreamReady(TTSClipData clipData, bool fromDisk)
         {
             // Refresh cache for file size
-            if (RuntimeCacheHandler != null)
-            {
-                // Stop forcing an unload if runtime cache update fails
-                RuntimeCacheHandler.OnClipRemoved.RemoveListener(OnRuntimeClipRemoved);
-                bool failed = !RuntimeCacheHandler.AddClip(clipData);
-                RuntimeCacheHandler.OnClipRemoved.AddListener(OnRuntimeClipRemoved);
-
-                // Handle fail directly
-                if (failed)
-                {
-                    OnStreamError(clipData, "Removed from runtime cache due to file size", fromDisk);
-                    OnRuntimeClipRemoved(clipData);
-                    return;
-                }
-            }
+            RuntimeCacheHandler?.AddClip(clipData);
 
             // Now loaded
             SetClipLoadState(clipData, TTSClipLoadState.Loaded);
-            VLog.D(GetClipLog($"{(fromDisk ? "Disk" : "Web")} Stream Ready", clipData));
 
             // Invoke playback is ready
             clipData.onPlaybackReady?.Invoke(string.Empty);
             clipData.onPlaybackReady = null;
 
             // Callback delegate
+            LogClip($"{(fromDisk ? "Disk" : "Web")} Stream Ready", clipData);
             Events?.Stream?.OnStreamReady?.Invoke(clipData);
         }
         // Handle cancel of disk cache streaming
@@ -547,11 +541,11 @@ namespace Meta.WitAi.TTS
             SetClipLoadState(clipData, TTSClipLoadState.Error);
 
             // Invoke
-            clipData.onPlaybackReady?.Invoke(WitConstants.CANCEL_ERROR);
+            clipData.onPlaybackReady?.Invoke(CANCEL_WARNING);
             clipData.onPlaybackReady = null;
 
             // Callback delegate
-            VLog.D(GetClipLog($"{(fromDisk ? "Disk" : "Web")} Stream Canceled", clipData));
+            LogClip($"{(fromDisk ? "Disk" : "Web")} Stream Canceled", clipData);
             Events?.Stream?.OnStreamCancel?.Invoke(clipData);
 
             // Unload clip
@@ -562,13 +556,6 @@ namespace Meta.WitAi.TTS
         private void OnWebStreamError(TTSClipData clipData, string error) => OnStreamError(clipData, error, false);
         private void OnStreamError(TTSClipData clipData, string error, bool fromDisk)
         {
-            // Cancelled
-            if (error.Equals(WitConstants.CANCEL_ERROR))
-            {
-                OnStreamCancel(clipData, fromDisk);
-                return;
-            }
-
             // Error
             SetClipLoadState(clipData, TTSClipLoadState.Error);
 
@@ -577,23 +564,11 @@ namespace Meta.WitAi.TTS
             clipData.onPlaybackReady = null;
 
             // Stream error
-            VLog.E(GetClipLog($"{(fromDisk ? "Disk" : "Web")} Stream Error\nError: {error}", clipData));
+            LogClip($"{(fromDisk ? "Disk" : "Web")} Stream Error\nError: {error}", clipData, TTSLogType.Error);
             Events?.Stream?.OnStreamError?.Invoke(clipData, error);
 
             // Unload clip
             Unload(clipData);
-        }
-        // Web stream complete
-        private void OnStreamClipUpdated(TTSClipData clipData)
-        {
-            VLog.D(GetClipLog($"Stream Clip Updated", clipData));
-            Events?.Stream?.OnStreamClipUpdate?.Invoke(clipData);
-        }
-        // Web stream complete
-        private void OnWebStreamComplete(TTSClipData clipData)
-        {
-            VLog.D(GetClipLog($"Web Stream Complete", clipData));
-            Events?.Stream?.OnStreamComplete?.Invoke(clipData);
         }
         #endregion
 
@@ -611,10 +586,11 @@ namespace Meta.WitAi.TTS
             }
 
             // Copy array
-            HashSet<TTSClipData> remaining = new HashSet<TTSClipData>(clips);
+            TTSClipData[] copy = new TTSClipData[clips.Length];
+            clips.CopyTo(copy, 0);
 
             // Unload all clips
-            foreach (var clip in remaining)
+            foreach (var clip in copy)
             {
                 Unload(clip);
             }
@@ -650,17 +626,16 @@ namespace Meta.WitAi.TTS
                 DiskCacheHandler?.CancelDiskCacheStream(clipData);
             }
             // Destroy clip
-            if (clipData.clip != null)
+            else if (clipData.clip != null)
             {
-                clipData.clip.DestroySafely();
-                clipData.clip = null;
+                MonoBehaviour.DestroyImmediate(clipData.clip);
             }
 
             // Clip is now unloaded
             SetClipLoadState(clipData, TTSClipLoadState.Unloaded);
 
             // Unload
-            VLog.D(GetClipLog($"Unload Clip", clipData));
+            LogClip($"Unload Clip", clipData);
             Events?.OnClipUnloaded?.Invoke(clipData);
         }
         #endregion
@@ -680,7 +655,6 @@ namespace Meta.WitAi.TTS
         /// </summary>
         /// <param name="clipData"></param>
         protected virtual void OnRuntimeClipAdded(TTSClipData clipData) => OnLoadBegin(clipData);
-
         /// <summary>
         /// Called when runtime cache unloads a clip
         /// </summary>
@@ -749,36 +723,33 @@ namespace Meta.WitAi.TTS
 
             // Check if cached to disk & log
             string downloadPath = DiskCacheHandler.GetDiskCachePath(clipData);
-            DiskCacheHandler.CheckCachedToDisk(clipData, (clip, found) =>
+            bool found = DiskCacheHandler.IsCachedToDisk(clipData);
+            LogClip($"Disk Cache {(found ? "Found" : "Missing")}\nPath: {downloadPath}", clipData);
+
+            // Found
+            if (found)
             {
-                // Cache checked
-                VLog.D(GetClipLog($"Disk Cache {(found ? "Found" : "Missing")}\nPath: {downloadPath}", clipData));
+                onDownloadComplete?.Invoke(clipData, downloadPath, string.Empty);
+                return;
+            }
 
-                // Already downloaded, return successful
-                if (found)
-                {
-                    onDownloadComplete?.Invoke(clipData, downloadPath, string.Empty);
-                    return;
-                }
+            // Fail if not preloaded
+            if (Application.isPlaying && clipData.diskCacheSettings.DiskCacheLocation == TTSDiskCacheLocation.Preload)
+            {
+                onDownloadComplete?.Invoke(clipData, downloadPath, "File is not Preloaded");
+                return;
+            }
 
-                // Preload selected but not in disk cache, return an error
-                if (Application.isPlaying && clipData.diskCacheSettings.DiskCacheLocation == TTSDiskCacheLocation.Preload)
-                {
-                    onDownloadComplete?.Invoke(clipData, downloadPath, "File is not Preloaded");
-                    return;
-                }
+            // Return error
+            clipData.onDownloadComplete += (error) => onDownloadComplete(clipData, downloadPath, error);
 
-                // Add download completion callback
-                clipData.onDownloadComplete += (error) => onDownloadComplete?.Invoke(clipData, downloadPath, error);
-
-                // Download to cache
-                WebHandler.RequestDownloadFromWeb(clipData, downloadPath);
-            });
+            // Download to cache & then stream
+            WebHandler.RequestDownloadFromWeb(clipData, downloadPath);
         }
         // On web download begin
         private void OnWebDownloadBegin(TTSClipData clipData, string downloadPath)
         {
-            VLog.D(GetClipLog($"Download Clip - Begin\nPath: {downloadPath}", clipData));
+            LogClip($"Download Clip - Begin\nPath: {downloadPath}", clipData);
             Events?.Download?.OnDownloadBegin?.Invoke(clipData, downloadPath);
         }
         // On web download complete
@@ -789,36 +760,29 @@ namespace Meta.WitAi.TTS
             clipData.onDownloadComplete = null;
 
             // Log
-            VLog.D(GetClipLog($"Download Clip - Success\nPath: {downloadPath}", clipData));
+            LogClip($"Download Clip - Success\nPath: {downloadPath}", clipData);
             Events?.Download?.OnDownloadSuccess?.Invoke(clipData, downloadPath);
         }
         // On web download complete
         private void OnWebDownloadCancel(TTSClipData clipData, string downloadPath)
         {
             // Invoke clip callback & clear
-            clipData.onDownloadComplete?.Invoke(WitConstants.CANCEL_ERROR);
+            clipData.onDownloadComplete?.Invoke(CANCEL_WARNING);
             clipData.onDownloadComplete = null;
 
             // Log
-            VLog.D(GetClipLog($"Download Clip - Canceled\nPath: {downloadPath}", clipData));
+            LogClip($"Download Clip - Canceled\nPath: {downloadPath}", clipData);
             Events?.Download?.OnDownloadCancel?.Invoke(clipData, downloadPath);
         }
         // On web download complete
         private void OnWebDownloadError(TTSClipData clipData, string downloadPath, string error)
         {
-            // Cancelled
-            if (error.Equals(WitConstants.CANCEL_ERROR))
-            {
-                OnWebDownloadCancel(clipData, downloadPath);
-                return;
-            }
-
             // Invoke clip callback & clear
             clipData.onDownloadComplete?.Invoke(error);
             clipData.onDownloadComplete = null;
 
             // Log
-            VLog.E(GetClipLog($"Download Clip - Failed\nPath: {downloadPath}\nError: {error}", clipData));
+            LogClip($"Download Clip - Failed\nPath: {downloadPath}", clipData, TTSLogType.Error);
             Events?.Download?.OnDownloadError?.Invoke(clipData, downloadPath, error);
         }
         #endregion

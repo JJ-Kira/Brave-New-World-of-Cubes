@@ -38,7 +38,7 @@ namespace Oculus.Interaction.Input
         }
 
         [SerializeField]
-        private ProgressCurve _wristPositionLockCurve;
+        private ProgressCurve _wristPositionLockCurve = new ProgressCurve();
         [SerializeField]
         private ProgressCurve _wristPositionUnlockCurve;
         [SerializeField]
@@ -84,18 +84,18 @@ namespace Oculus.Interaction.Input
 
         protected override void Start()
         {
-            this.BeginStart(ref _started, () => base.Start());
+            base.Start();
+
             for (int i = 0; i < FingersMetadata.HAND_JOINT_IDS.Length; i++)
             {
                 _jointLockProgressCurves[i] = new ProgressCurve(_jointLockCurve);
                 _jointUnlockProgressCurves[i] = new ProgressCurve(_jointUnlockCurve);
             }
-            this.EndStart(ref _started);
         }
 
         protected override void Apply(HandDataAsset data)
         {
-            if (!Started || !data.IsDataValid || !data.IsTracked || !data.IsHighConfidence)
+            if (!data.IsDataValid || !data.IsTracked || !data.IsHighConfidence)
             {
                 data.IsConnected = false;
                 data.RootPoseOrigin = PoseOrigin.None;
@@ -364,8 +364,7 @@ namespace Oculus.Interaction.Input
         /// <param name="skipAnimation">Whether to skip the animation curve for this override.</param>
         public void LockWristPose(Pose wristPose, float overrideFactor = 1f, WristLockMode lockMode = WristLockMode.Full, bool worldPose = false, bool skipAnimation = false)
         {
-            Pose desiredWristPose = (worldPose && TrackingToWorldTransformer != null ) ?
-                TrackingToWorldTransformer.ToTrackingPose(wristPose): wristPose;
+            Pose desiredWristPose = (worldPose && TrackingToWorldTransformer != null ) ? TrackingToWorldTransformer.ToTrackingPose(wristPose) : wristPose;
 
             if ((lockMode & WristLockMode.Position) != 0)
             {
@@ -473,12 +472,13 @@ namespace Oculus.Interaction.Input
 
         public void InjectAllSyntheticHandModifier(UpdateModeFlags updateMode, IDataSource updateAfter,
             DataModifier<HandDataAsset> modifyDataFromSource, bool applyModifier,
+            Component[] aspects,
             ProgressCurve wristPositionLockCurve, ProgressCurve wristPositionUnlockCurve,
             ProgressCurve wristRotationLockCurve, ProgressCurve wristRotationUnlockCurve,
             ProgressCurve jointLockCurve, ProgressCurve jointUnlockCurve,
             float spreadAllowance)
         {
-            base.InjectAllHand(updateMode, updateAfter, modifyDataFromSource, applyModifier);
+            base.InjectAllHand(updateMode, updateAfter, modifyDataFromSource, applyModifier, aspects);
 
             InjectWristPositionLockCurve(wristPositionLockCurve);
             InjectWristPositionUnlockCurve(wristPositionUnlockCurve);

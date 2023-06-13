@@ -10,9 +10,7 @@ namespace Oculus.Platform.Models
 
   public class LaunchFriendRequestFlowResult
   {
-    /// Whether the viewer chose to cancel the friend request flow.
     public readonly bool DidCancel;
-    /// Whether the viewer successfully sent the friend request.
     public readonly bool DidSendRequest;
 
 

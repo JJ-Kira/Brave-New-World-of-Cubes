@@ -57,7 +57,6 @@ namespace Oculus.VR.Editor
             {
                 throw new DirectoryNotFoundException($"Unable to find parent directory of {assetPath}");
             }
-
             string editorPath = editorDir.FullName;
 
             var ovrDir = Directory.GetParent(editorPath);
@@ -65,7 +64,6 @@ namespace Oculus.VR.Editor
             {
                 throw new DirectoryNotFoundException($"Unable to find parent directory of {editorPath}");
             }
-
             return ovrDir.FullName;
         }
 

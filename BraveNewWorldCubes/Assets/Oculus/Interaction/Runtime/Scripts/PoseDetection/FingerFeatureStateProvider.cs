@@ -55,7 +55,6 @@ namespace Oculus.Interaction.PoseDetection
     {
         bool GetCurrentState(HandFinger finger, FingerFeature fingerFeature, out string currentState);
         bool IsStateActive(HandFinger finger, FingerFeature feature, FeatureStateActiveMode mode, string stateId);
-        float? GetFeatureValue(HandFinger finger, FingerFeature fingerFeature);
     }
 
     /// <summary>
@@ -68,32 +67,25 @@ namespace Oculus.Interaction.PoseDetection
     public class FingerFeatureStateProvider : MonoBehaviour, IFingerFeatureStateProvider
     {
         [SerializeField, Interface(typeof(IHand))]
-        [Tooltip("Data source used to retrieve finger bone rotations.")]
-        private UnityEngine.Object _hand;
+        private MonoBehaviour _hand;
         public IHand Hand { get; private set; }
 
         [Serializable]
         public struct FingerStateThresholds
         {
-            [Tooltip("Which finger the state thresholds apply to.")]
             public HandFinger Finger;
-
-            [Tooltip("State threshold configuration")]
             public FingerFeatureStateThresholds StateThresholds;
         }
 
         [SerializeField]
-        [Tooltip("Contains state transition threasholds for each finger. " +
-            "Must contain 5 entries (one for each finger). " +
-            "Each finger must exist in the list exactly once.")]
         private List<FingerStateThresholds> _fingerStateThresholds;
 
         [Header("Advanced Settings")]
         [SerializeField]
         [Tooltip("If true, disables proactive evaluation of any FingerFeature that has been " +
                  "queried at least once. This will force lazy-evaluation of state within calls " +
-                 "to IsStateActive, which means you must call IsStateActive for each feature manually " +
-                 "each frame to avoid missing transitions between states.")]
+                 "to IsStateActive, which means you must do so each frame to avoid missing " +
+                 "transitions between states.")]
         private bool _disableProactiveEvaluation;
 
         protected bool _started = false;
@@ -118,7 +110,7 @@ namespace Oculus.Interaction.PoseDetection
         protected virtual void Start()
         {
             this.BeginStart(ref _started);
-            this.AssertField(Hand, nameof(Hand));
+            Assert.IsNotNull(Hand);
             if (_timeProvider == null)
             {
                 _timeProvider = () => Time.time;
@@ -148,11 +140,9 @@ namespace Oculus.Interaction.PoseDetection
 
         private void ReadStateThresholds()
         {
-            this.AssertCollectionField(_fingerStateThresholds, nameof(_fingerStateThresholds));
-            this.AssertField(_timeProvider, nameof(_timeProvider));
-            this.AssertIsTrue(Constants.NUM_FINGERS == _fingerStateThresholds.Count,
-               $"The{AssertUtils.Nicify(nameof(_fingerStateThresholds))} count must be equal to {Constants.NUM_FINGERS}.");
-
+            Assert.IsNotNull(_fingerStateThresholds);
+            Assert.IsNotNull(_timeProvider);
+            Assert.AreEqual(Constants.NUM_FINGERS, _fingerStateThresholds.Count);
 
             HandFingerFlags seenFingers = HandFingerFlags.None;
             foreach (FingerStateThresholds fingerStateThresholds in _fingerStateThresholds)
@@ -175,8 +165,7 @@ namespace Oculus.Interaction.PoseDetection
 
                 featureStateProvider.InitializeThresholds(fingerStateThresholds.StateThresholds);
             }
-            this.AssertIsTrue(seenFingers == HandFingerFlags.All,
-               $"The {AssertUtils.Nicify(nameof(_fingerStateThresholds))} is missing some fingers.");
+            Assert.AreEqual(seenFingers, HandFingerFlags.All);
         }
 
         private void HandDataAvailable()
@@ -279,7 +268,7 @@ namespace Oculus.Interaction.PoseDetection
 
         public void InjectHand(IHand hand)
         {
-            _hand = hand as UnityEngine.Object;
+            _hand = hand as MonoBehaviour;
             Hand = hand;
         }
 

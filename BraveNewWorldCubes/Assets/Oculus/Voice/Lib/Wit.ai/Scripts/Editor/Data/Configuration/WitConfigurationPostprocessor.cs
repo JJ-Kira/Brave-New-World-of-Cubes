@@ -8,7 +8,7 @@
 
 using UnityEditor;
 
-namespace Meta.WitAi.Data.Configuration
+namespace Facebook.WitAi.Data.Configuration
 {
     public class WitConfigurationPostprocessor : AssetPostprocessor
     {

@@ -7,11 +7,9 @@
  */
 
 using System.Collections.Generic;
-using System.IO;
 using UnityEditor;
-using UnityEngine;
 
-namespace Meta.WitAi.Utilities
+namespace Facebook.WitAi.Utilities
 {
     public static class AssetDatabaseUtility
     {
@@ -46,24 +44,6 @@ namespace Meta.WitAi.Utilities
                             break;
                         }
                     }
-                }
-            }
-            return results.ToArray();
-        }
-
-        // Gets the absolute string path of the asset(s) with the matching name
-        public static string[] FindUnityAssetPath(string filter, bool ignoreAdditional = false)
-        {
-            var relativePaths = AssetDatabase.FindAssets(filter);
-            char d = Path.DirectorySeparatorChar;
-
-            List<string> results = new List<string>();
-            foreach (var relPath in relativePaths)
-            {
-                results.Add($"{Application.dataPath}{d}..{d}{AssetDatabase.GUIDToAssetPath(relPath)}");
-                if (ignoreAdditional)
-                {
-                    break;
                 }
             }
             return results.ToArray();

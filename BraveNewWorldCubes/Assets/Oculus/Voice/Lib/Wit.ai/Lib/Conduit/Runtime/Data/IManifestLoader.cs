@@ -16,12 +16,5 @@ namespace Meta.Conduit
         /// <param name="filePath">The path to the manifest file.</param>
         /// <returns>The loaded manifest object.</returns>
         Manifest LoadManifest(string filePath);
-
-        /// <summary>
-        /// Loads the manifest from an input string into a <see cref="Manifest"/> structure.
-        /// </summary>
-        /// <param name="manifestText">Plain text content of Manifest.</param>
-        /// <returns>The loaded manifest object.</returns>
-        Manifest LoadManifestFromString(string manifestText);
     }
 }

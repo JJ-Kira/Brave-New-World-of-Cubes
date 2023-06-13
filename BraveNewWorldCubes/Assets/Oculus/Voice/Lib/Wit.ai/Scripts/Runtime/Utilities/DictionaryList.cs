@@ -8,7 +8,7 @@
 
 using System.Collections.Generic;
 
-namespace Meta.WitAi.Utilities
+namespace Facebook.WitAi.Utilities
 {
     public class DictionaryList<T, U>
     {

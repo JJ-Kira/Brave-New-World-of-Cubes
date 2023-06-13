@@ -30,6 +30,5 @@ namespace Oculus.Voice.Core.Bindings.Interfaces
         void LogInteractionEndFailure(string errorMessage);
         void LogInteractionPoint(string interactionPoint);
         void LogAnnotation(string annotationKey, string annotationValue);
-        void LogFirstTranscriptionTime();
     }
 }

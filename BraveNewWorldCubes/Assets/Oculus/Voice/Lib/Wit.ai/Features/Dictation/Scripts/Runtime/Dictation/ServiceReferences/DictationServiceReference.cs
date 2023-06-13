@@ -7,14 +7,14 @@
  */
 
 using System;
-using Meta.WitAi.Dictation;
+using Facebook.WitAi.Dictation;
 using UnityEngine;
 
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
 
-namespace Meta.WitAi.Utilities
+namespace Facebook.WitAi.Utilities
 {
     [Serializable]
     public struct DictationServiceReference

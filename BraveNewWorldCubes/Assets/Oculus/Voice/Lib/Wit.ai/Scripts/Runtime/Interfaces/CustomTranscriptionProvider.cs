@@ -6,11 +6,11 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-using Meta.WitAi.Events;
+using Facebook.WitAi.Events;
 using UnityEngine;
 using UnityEngine.Events;
 
-namespace Meta.WitAi.Interfaces
+namespace Facebook.WitAi.Interfaces
 {
     public abstract class CustomTranscriptionProvider : MonoBehaviour, ITranscriptionProvider
     {

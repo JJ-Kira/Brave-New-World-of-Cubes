@@ -6,10 +6,10 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-using Meta.WitAi.Interfaces;
+using Facebook.WitAi.Interfaces;
 using UnityEngine;
 
-namespace Meta.WitAi.Data.Entities
+namespace Facebook.WitAi.Data.Entities
 {
     public class DynamicEntityProvider : MonoBehaviour, IDynamicEntitiesProvider
     {

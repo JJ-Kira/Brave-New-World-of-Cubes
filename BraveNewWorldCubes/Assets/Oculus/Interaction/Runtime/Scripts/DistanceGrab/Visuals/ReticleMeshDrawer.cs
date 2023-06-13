@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (c) Meta Platforms, Inc. and affiliates.
  * All rights reserved.
  *
@@ -18,18 +18,19 @@
  * limitations under the License.
  */
 
+using Oculus.Interaction.Grab;
 using Oculus.Interaction.HandGrab;
 using UnityEngine;
-using UnityEngine.Serialization;
+using UnityEngine.Assertions;
 
 namespace Oculus.Interaction.DistanceReticles
 {
     public class ReticleMeshDrawer : InteractorReticle<ReticleDataMesh>
     {
-        [FormerlySerializedAs("_handGrabber")]
-        [SerializeField, Interface(typeof(IHandGrabInteractor), typeof(IInteractorView))]
-        private UnityEngine.Object _handGrabInteractor;
-        private IHandGrabInteractor HandGrabInteractor { get; set; }
+        [SerializeField, Interface(typeof(IHandGrabber), typeof(IHandGrabState), typeof(IInteractorView))]
+        private MonoBehaviour _handGrabber;
+        private IHandGrabber HandGrabber { get; set; }
+        private IHandGrabState HandGrabSource { get; set; }
 
         [SerializeField]
         private MeshFilter _filter;
@@ -51,8 +52,9 @@ namespace Oculus.Interaction.DistanceReticles
             }
         }
 
+
         protected override IInteractorView Interactor { get; set; }
-        protected override Component InteractableComponent => HandGrabInteractor.TargetInteractable as Component;
+        protected override Component InteractableComponent => HandGrabber.TargetInteractable as Component;
 
         private Tween _tween;
 
@@ -64,17 +66,16 @@ namespace Oculus.Interaction.DistanceReticles
 
         protected virtual void Awake()
         {
-            HandGrabInteractor = _handGrabInteractor as IHandGrabInteractor;
-            Interactor = _handGrabInteractor as IInteractorView;
+            HandGrabber = _handGrabber as IHandGrabber;
+            HandGrabSource = _handGrabber as IHandGrabState;
+            Interactor = _handGrabber as IInteractorView;
         }
 
         protected override void Start()
         {
             this.BeginStart(ref _started, () => base.Start());
-            this.AssertField(Interactor, nameof(_handGrabInteractor));
-            this.AssertField(HandGrabInteractor, nameof(_handGrabInteractor));
-            this.AssertField(_filter, nameof(_filter));
-            this.AssertField(_renderer, nameof(_renderer));
+            Assert.IsNotNull(_filter);
+            Assert.IsNotNull(_renderer);
             this.EndStart(ref _started);
         }
 
@@ -84,7 +85,7 @@ namespace Oculus.Interaction.DistanceReticles
             _filter.transform.localScale = dataMesh.Filter.transform.lossyScale;
             _renderer.enabled = true;
 
-            Pose target = DestinationPose(dataMesh, HandGrabInteractor.GetTargetGrabPose());
+            Pose target = DestinationPose(dataMesh, HandGrabSource.HandGrabTarget.WorldGrabPose);
             _tween = _travelData.CreateTween(dataMesh.Target.GetPose(), target);
         }
 
@@ -96,7 +97,7 @@ namespace Oculus.Interaction.DistanceReticles
 
         protected override void Align(ReticleDataMesh data)
         {
-            Pose target = DestinationPose(data, HandGrabInteractor.GetTargetGrabPose());
+            Pose target = DestinationPose(data, HandGrabSource.HandGrabTarget.WorldGrabPose);
             _tween.UpdateTarget(target);
 
 
@@ -107,27 +108,28 @@ namespace Oculus.Interaction.DistanceReticles
         private Pose DestinationPose(ReticleDataMesh data, Pose worldSnapPose)
         {
             Pose targetOffset = PoseUtils.Delta(worldSnapPose, data.Target.GetPose());
-            HandGrabInteractor.HandGrabApi.Hand.GetRootPose(out Pose pose);
-            pose.Premultiply(HandGrabInteractor.WristToGrabPoseOffset);
+            HandGrabber.HandGrabApi.Hand.GetRootPose(out Pose pose);
+            pose.Premultiply(HandGrabSource.WristToGrabPoseOffset);
             pose.Premultiply(targetOffset);
 
             return pose;
         }
 
         #region Inject
-        public void InjectAllReticleMeshDrawer(IHandGrabInteractor handGrabInteractor,
+        public void InjectAllReticleMeshDrawer(IHandGrabber handGrabber,
             MeshFilter filter, MeshRenderer renderer)
         {
-            InjectHandGrabInteractor(handGrabInteractor);
+            InjectHandGrabber(handGrabber);
             InjectFilter(filter);
             InjectRenderer(renderer);
         }
 
-        public void InjectHandGrabInteractor(IHandGrabInteractor handGrabInteractor)
+        public void InjectHandGrabber(IHandGrabber handGrabber)
         {
-            _handGrabInteractor = handGrabInteractor as UnityEngine.Object;
-            HandGrabInteractor = handGrabInteractor;
-            Interactor = handGrabInteractor as IInteractorView;
+            _handGrabber = handGrabber as MonoBehaviour;
+            HandGrabber = handGrabber;
+            Interactor = handGrabber as IInteractorView;
+            HandGrabSource = handGrabber as IHandGrabState;
         }
 
         public void InjectFilter(MeshFilter filter)

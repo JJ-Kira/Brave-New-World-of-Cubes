@@ -95,7 +95,7 @@ namespace Oculus.Interaction
 
         protected virtual void Start()
         {
-            this.AssertField(_materialPropertyBlockEditor, nameof(_materialPropertyBlockEditor));
+            Assert.IsNotNull(_materialPropertyBlockEditor);
             _change = true;
         }
 

@@ -20,14 +20,15 @@
 
 using Oculus.Interaction.Input;
 using UnityEngine;
+using UnityEngine.Assertions;
+using UnityEngine.Serialization;
 
 namespace Oculus.Interaction
 {
     public class ControllerActiveState : MonoBehaviour, IActiveState
     {
-        [Tooltip("ActiveState will be true while this controller is connected.")]
         [SerializeField, Interface(typeof(IController))]
-        UnityEngine.Object _controller;
+        MonoBehaviour _controller;
 
         private IController Controller;
 
@@ -40,7 +41,7 @@ namespace Oculus.Interaction
 
         protected virtual void Start()
         {
-            this.AssertField(Controller, nameof(Controller));
+            Assert.IsNotNull(Controller);
         }
 
         #region Inject
@@ -52,7 +53,7 @@ namespace Oculus.Interaction
 
         public void InjectController(IController controller)
         {
-            _controller = controller as UnityEngine.Object;
+            _controller = controller as MonoBehaviour;
             Controller = controller;
         }
 

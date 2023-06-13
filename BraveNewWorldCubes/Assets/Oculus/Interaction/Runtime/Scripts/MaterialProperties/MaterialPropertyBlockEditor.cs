@@ -35,7 +35,6 @@ namespace Oculus.Interaction
     public struct MaterialPropertyColor
     {
         public string name;
-        [ColorUsage(showAlpha: true, hdr: true)]
         public Color value;
     }
 

@@ -40,7 +40,7 @@ namespace Oculus.Interaction.Samples
         }
 
         [SerializeField, Interface(typeof(IInteractableView))]
-        private UnityEngine.Object _interactableView;
+        private MonoBehaviour _interactableView;
 
         [Tooltip("Transform to track rotation of. If not provided, transform of this component is used.")]
         [SerializeField, Optional]
@@ -159,9 +159,9 @@ namespace Oculus.Interaction.Samples
         protected virtual void Start()
         {
             this.BeginStart(ref _started);
-            this.AssertField(InteractableView, nameof(InteractableView));
-            this.AssertField(TrackedTransform, nameof(TrackedTransform));
-            this.AssertField(_relativeTo, nameof(_relativeTo));
+            Assert.IsNotNull(InteractableView);
+            Assert.IsNotNull(TrackedTransform);
+            Assert.IsNotNull(_relativeTo);
             this.EndStart(ref _started);
         }
 

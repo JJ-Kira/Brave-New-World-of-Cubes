@@ -10,9 +10,7 @@ namespace Oculus.Platform.Models
 
   public class AssetFileDownloadResult
   {
-    /// ID of the asset file
     public readonly UInt64 AssetId;
-    /// File path of the asset file.
     public readonly string Filepath;
 
 

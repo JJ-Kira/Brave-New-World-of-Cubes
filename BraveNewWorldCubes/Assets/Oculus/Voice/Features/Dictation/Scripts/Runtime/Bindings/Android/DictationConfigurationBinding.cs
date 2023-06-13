@@ -18,8 +18,7 @@
  * limitations under the License.
  */
 
-using Meta.WitAi;
-using Meta.WitAi.Configuration;
+using Facebook.WitAi.Configuration;
 using Oculus.Voice.Dictation.Configuration;
 using UnityEngine;
 
@@ -36,7 +35,7 @@ namespace Oculus.Voice.Dictation.Bindings.Android
             if (null == runtimeConfiguration)
             {
                 // No config defined, use the default configuration.
-                VLog.W("No dictation config has been defined. Using the default configuration.");
+                Debug.LogWarning("No dictation config has been defined. Using the default configuration.");
                 _dictationConfiguration = new DictationConfiguration();
             }
             else
