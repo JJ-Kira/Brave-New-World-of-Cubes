@@ -163,35 +163,6 @@ public class VirtualPet : MonoBehaviour
             case PetState.Listening:
                 CheckForPetting();
                 break;
-            case PetState.Ending:
-                // trigger the UFO animation upon approaching
-                Vector3 targetPos = _rampBaseHit ? WorldBeyondManager.Instance._finalUfoTarget.position + Vector3.up * 3.0f : WorldBeyondManager.Instance._finalUfoRamp.position;
-                Vector3 targetDistance = transform.position - targetPos;
-                float dist = _rampBaseHit ? 1.0f : 0.5f;
-                bool endGame = false;
-                if (targetDistance.magnitude <= dist)
-                {
-                    if (!_rampBaseHit)
-                    {
-                        _rampBaseHit = true;
-                        _agent.SetDestination(WorldBeyondManager.Instance._finalUfoTarget.position + Vector3.up * 3.0f);
-                        AudioManager.SetSnapshot_Ending();
-                        MusicManager.Instance.PlayMusic(MusicManager.Instance.OutroMusic);
-                    }
-                    else
-                    {
-                        endGame = true;
-                    }
-                }
-
-                if (endGame)
-                {
-                    WorldBeyondManager.Instance.FlyAwayUFO();
-                    _oppyState = PetState.Idle;
-                    gameObject.transform.position = _mainCam.position;
-                    gameObject.SetActive(false);
-                }
-                break;
         }
 
         Vector3 targetLookDirection = _moveTargetDir;
@@ -396,10 +367,6 @@ public class VirtualPet : MonoBehaviour
 
         // check eat hand for distance to head
         _animator.SetBool("Petting", petting);
-        if (petting)
-        {
-            WitConnector.Instance.WitSwitcher(false);
-        }
     }
 
     public void SetOppyChapter(WorldBeyondManager.GameChapter newChapter)
@@ -408,9 +375,6 @@ public class VirtualPet : MonoBehaviour
         ResetAnimFlags();
         switch (newChapter)
         {
-            case WorldBeyondManager.GameChapter.Title:
-                WorldBeyondManager.Instance._spaceShipAnimator.StopIdleSound();
-                break;
             case WorldBeyondManager.GameChapter.Introduction:
                 _collectedBalls = 0;
                 _oppyState = PetState.Idle;
@@ -427,7 +391,6 @@ public class VirtualPet : MonoBehaviour
                 EnablePassthroughShell(true);
                 break;
             case WorldBeyondManager.GameChapter.OppyExploresReality:
-                WorldBeyondManager.Instance._spaceShipAnimator.StopIdleSound();
                 _collectedBalls = 0;
                 _animator.SetBool("Wonder", true);
                 SetMaterialSaturation(1.0f);
@@ -442,77 +405,13 @@ public class VirtualPet : MonoBehaviour
                 break;
             case WorldBeyondManager.GameChapter.Ending:
                 EndLookTarget();
-                _agent.SetDestination(WorldBeyondManager.Instance._finalUfoRamp.position);
                 _rampBaseHit = false;
                 _oppyState = PetState.Ending;
                 _agent.speed = _runSpeed;
                 break;
         }
     }
-
-    #region AnimEvents
-    // these are called from animations
-    public void AttachBallToBone()
-    {
-        if (_ballEatTarget)
-        {
-            _ballAttached = true;
-        }
-    }
-
-    public void ChompBall()
-    {
-        if (_ballEatTarget)
-        {
-            // only start counting balls after the walls have been opened
-            // otherwise there's a chance to finish the game prematurely
-            if (_ballEatTarget._ballAdvancesStory)
-            {
-                _collectedBalls++;
-            }
-            _ballEatTarget.ForceKill(_headBone.up);
-            _ballEatTarget = null;
-            _ballAttached = false;
-            _glowOvershoot = 1.0f;
-        }
-    }
-
-    public void FinishEating()
-    {
-        StartLookTarget();
-
-        _animator.SetBool("Eating", false);
-
-        _eatCooldown = 0.0f;
-
-        if (_collectedBalls >= WorldBeyondManager.Instance._oppyTargetBallCount)
-        {
-            _animator.SetTrigger("PowerUp");
-            _oppyState = PetState.Idle;
-        }
-        else
-        {
-            ResumeChasing();
-        }
-
-        //NOTE: after eating, Oppy will try to listen again, if it doesn't have user's focus or can't enable voice somehow, Oppy moves away.
-        if (CanListen() && WitConnector.Instance.currentFocus) {
-            bool reactivateWit = WitConnector.Instance.WitSwitcher(true);
-            if (!reactivateWit) MoveAway();
-        }
-    }
-
-    public void PlayPowerUp()
-    {
-        Instantiate(_fullyChargedPrefab, transform.position, transform.rotation);
-        AudioManager.SetSnapshot_TheGreatBeyond_AfterPowerup();
-    }
-
-    public void GoToUFO()
-    {
-        WorldBeyondManager.Instance.ForceChapter(WorldBeyondManager.GameChapter.Ending);
-    }
-    #endregion AnimEvents
+    
     public bool IsGameOver()
     {
         bool gameOver = WorldBeyondManager.Instance._currentChapter == WorldBeyondManager.GameChapter.Ending;
@@ -700,19 +599,8 @@ public class VirtualPet : MonoBehaviour
         targetPoint.y = 0;
         _agent.SetDestination(targetPoint);
     }
-
-    //NOTE: Called from CheckListenAvailable script which is attached on Run and Pet_End Animations
-    public void CheckListenAvailable() {
-        StartCoroutine(TryToReactivateWit());
-    }
     
-    IEnumerator TryToReactivateWit(float waitTime = 1) {
-        yield return new WaitForSeconds(waitTime);
-        if (CanListen() && WitConnector.Instance.currentFocus && ArrivedDestination())
-        {
-            bool reactivateWit = WitConnector.Instance.WitSwitcher(true);
-        }
-    }
+
     
     bool ArrivedDestination() {
         if (!_agent.pathPending)

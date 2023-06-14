@@ -44,18 +44,10 @@ public class WorldBeyondManager : MonoBehaviour
     public OVRSceneAnchor[] _sceneAnchors;
 
     [Header("Game Pieces")]
-    public VirtualPet _pet;
-    int _oppyDiscoveryCount = 0;
-    [HideInInspector]
-    public bool _oppyDiscovered = false;
+    
     public VirtualRoom _vrRoom;
     public LightBeam _lightBeam;
     Vector3 _toyBasePosition = Vector3.zero;
-    public Transform _finalUfoTarget;
-    public Transform _finalUfoRamp;
-    [HideInInspector]
-    public SpaceshipTrigger _spaceShipAnimator;
-
     // Energy balls
     Transform _ballContainer;
     public GameObject _ballPrefab;
@@ -74,10 +66,8 @@ public class WorldBeyondManager : MonoBehaviour
     // only starts incrementing during TheGreatBeyond chapter
     public int _oppyTargetBallCount { private set; get; } = 2;
     float _ballSpawnTimer = 0.0f;
-    const float _spawnTimeMin = 3.0f;
-    const float _spawnTimeMax = 6.0f;
+
     bool _shouldSpawnBall = false;
-    public GameObject _worldShockwave;
     public Material[] _environmentMaterials;
 
     [Header("Overlays")]
@@ -177,8 +167,6 @@ public class WorldBeyondManager : MonoBehaviour
             Color.black);
         _passthroughStylist.ForcePassthroughStyle(darkPassthroughStyle);
 
-        _spaceShipAnimator = _finalUfoTarget.GetComponent<SpaceshipTrigger>();
-
         _titleScreen = Instantiate(_titleScreenPrefab);
         _titleScreen.SetActive(false);
         _endScreen = Instantiate(_endScreenPrefab);
@@ -192,9 +180,6 @@ public class WorldBeyondManager : MonoBehaviour
 #if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_ANDROID
         OVRManager.eyeFovPremultipliedAlphaModeEnabled = false;
 #endif
-
-        if (MultiToy.Instance) MultiToy.Instance.InitializeToys();
-        _pet.Initialize();
 
         _sceneManager.SceneModelLoadedSuccessfully += SceneModelLoaded;
     }
@@ -337,18 +322,6 @@ public class WorldBeyondManager : MonoBehaviour
         bool flashlightActive = MultiToy.Instance.IsFlashlightActive();
         bool validMode = (_currentChapter > GameChapter.SearchForOppy && _currentChapter < GameChapter.Ending);
 
-        // note: this logic only executes after Oppy enters reality
-        // before that, the experience is scripted, so balls shouldn't spawn so randomly
-        if (flashlightActive && noHiddenBall && _oppyDiscoveryCount >= 2 && validMode)
-        {
-            _ballSpawnTimer -= Time.deltaTime;
-            if (_ballSpawnTimer <= 0.0f)
-            {
-                _shouldSpawnBall = true;
-                _ballSpawnTimer = Random.Range(_spawnTimeMin, _spawnTimeMax);
-            }
-        }
-
         if (_shouldSpawnBall)
         {
             SpawnHiddenBall();
@@ -357,13 +330,8 @@ public class WorldBeyondManager : MonoBehaviour
 
 
         bool roomSparkleRingVisible = (_currentChapter >= GameChapter.OppyExploresReality && _hiddenBallCollectable);
-        roomSparkleRingVisible |= (_currentChapter == GameChapter.SearchForOppy && (_pet.gameObject.activeSelf || (_hiddenBallCollectable && !_hiddenBallCollectable._wasShot)));
 
         Vector3 ripplePosition = _hiddenBallCollectable ? _hiddenBallPosition : Vector3.one * -1000.0f;
-        if (_currentChapter == GameChapter.SearchForOppy)
-        {
-            ripplePosition = _pet.gameObject.activeSelf ? _pet.transform.position : ripplePosition;
-        }
         float effectSpeed = Time.deltaTime * 2.0f;
         _vrRoomEffectTimer += roomSparkleRingVisible ? effectSpeed : -effectSpeed;
 
@@ -440,10 +408,6 @@ public class WorldBeyondManager : MonoBehaviour
 
         if ((int)_currentChapter < (int)GameChapter.SearchForOppy) _mainCamera.backgroundColor = _cameraDark;
 
-        _pet.gameObject.SetActive((int)_currentChapter >= (int)GameChapter.OppyExploresReality);
-        _pet.SetOppyChapter(_currentChapter);
-        _pet.PlaySparkles(false);
-
         if (_lightBeam) { _lightBeam.gameObject.SetActive(false); }
         if (_titleScreen) _titleScreen.SetActive(false);
         if (_endScreen) _endScreen.SetActive(false);
@@ -471,8 +435,6 @@ public class WorldBeyondManager : MonoBehaviour
                 break;
             case GameChapter.SearchForOppy:
                 VirtualRoom.Instance.HideEffectMesh();
-                _oppyDiscovered = false;
-                _oppyDiscoveryCount = 0;
                 _ballCount = _startingBallCount;
                 _passthroughStylist.ResetPassthrough(0.1f);
                 WorldBeyondEnvironment.Instance._sun.enabled = true;
@@ -486,7 +448,6 @@ public class WorldBeyondManager : MonoBehaviour
                 VirtualRoom.Instance.SetRoomSaturation(1.0f);
                 StartCoroutine(UnlockBallShooter(_usingHands ? 0f : 5.0f));
                 StartCoroutine(UnlockWallToy(_usingHands ? 5f : 20.0f));
-                _spaceShipAnimator.StartIdleSound(); // Start idle sound here - mix will mute it.
                 break;
             case GameChapter.TheGreatBeyond:
                 AudioManager.SetSnapshot_TheGreatBeyond();
@@ -703,7 +664,7 @@ public class WorldBeyondManager : MonoBehaviour
             yield return null;
         }
         KillControllerVibration();
-        StartCoroutine(SpawnPetRandomly(true, Random.Range(_spawnTimeMin, _spawnTimeMax)));
+        // StartCoroutine
     }
 
     /// <summary>
@@ -779,7 +740,7 @@ public class WorldBeyondManager : MonoBehaviour
             {
                 StopAllCoroutines();
             }
-            StartCoroutine(SpawnPetRandomly(false, Random.Range(_spawnTimeMin, _spawnTimeMax)));
+            // StartCoroutine
         }
     }
 
@@ -847,12 +808,6 @@ public class WorldBeyondManager : MonoBehaviour
     {
         yield return new WaitForSeconds(2.0f);
 
-        GameObject effectRing = Instantiate(_worldShockwave);
-        effectRing.transform.position = _pet.transform.position;
-        effectRing.GetComponent<ParticleSystem>().Play();
-
-        _pet.EnablePassthroughShell(true);
-
         PassthroughStylist.PassthroughStyle weirdPassthrough = new PassthroughStylist.PassthroughStyle(
                     new Color(0, 0, 0, 0),
                     1.0f,
@@ -886,7 +841,6 @@ public class WorldBeyondManager : MonoBehaviour
         }
 
         ForceChapter(GameChapter.OppyExploresReality);
-        _pet.EndLookTarget();
     }
 
     /// <summary>
@@ -910,21 +864,8 @@ public class WorldBeyondManager : MonoBehaviour
             }
             yield return null;
         }
-
-        // play Oppy teleport particles, only on the middle discovery
-        if (_oppyDiscoveryCount == 1)
-        {
-            _pet.PlayTeleport();
-        }
-
-        // hide Oppy
-        _oppyDiscovered = false;
-        _oppyDiscoveryCount++;
-        _pet.ResetAnimFlags();
-        float colorSaturation = IsGreyPassthrough() ? Mathf.Clamp01(_oppyDiscoveryCount / 3.0f) : 1.0f;
-        _pet.SetMaterialSaturation(colorSaturation);
-        _pet.StartLookTarget();
-        _pet.gameObject.SetActive(false);
+        
+        float colorSaturation = IsGreyPassthrough() ? Mathf.Clamp01(9.0f / 3.0f) : 1.0f; // change 9.0f if it is to change
 
         // increase room saturation while flashlight is off
         VirtualRoom.Instance.SetRoomSaturation(colorSaturation);
@@ -942,49 +883,8 @@ public class WorldBeyondManager : MonoBehaviour
             yield return null;
         }
         MultiToy.Instance._flashlightLoop_1.Resume();
-
-        if (_oppyDiscoveryCount == 1)
-        {
-            WorldBeyondTutorial.Instance.DisplayMessage(WorldBeyondTutorial.TutorialMessage.BallSearch);
-            _hiddenBallCollectable.SetState(BallCollectable.BallStatus.Hidden);
-        }
-        else
-        {
-            // spawn ball only after the first discovery (first ball already exists)
-            yield return new WaitForSeconds(Random.Range(_spawnTimeMin, _spawnTimeMax));
-            SpawnHiddenBall();
-        }
     }
-
-    /// <summary>
-    /// During the discovery chapter, Oppy is place in hidden locations in the space.
-    /// </summary>
-    IEnumerator SpawnPetRandomly(bool firstTimeSpawning, float waitTime)
-    {
-        yield return new WaitForSeconds(waitTime);
-        // because the pet has a Navigation component, we must turn off the object before manually moving
-        // this is to avoid the pet getting "stuck" on the walls
-        _pet.gameObject.SetActive(false);
-        Vector3 spawnPos = GetRandomPetPosition();
-        Vector3 fwd = _mainCamera.transform.position - spawnPos;
-        Quaternion oppyRotation = Quaternion.LookRotation(new Vector3(fwd.x, 0, fwd.z));
-        _pet.transform.rotation = oppyRotation;
-        _pet.transform.position = spawnPos - _pet.transform.right * 0.1f;
-        _pet.gameObject.SetActive(true);
-        _pet.PlaySparkles(true);
-        _pet.SetLookDirection(fwd.normalized);
-        if (firstTimeSpawning)
-        {
-            _pet.PrepareInitialDiscoveryAnim();
-            _pet.SetMaterialSaturation(IsGreyPassthrough() ? 0.0f : 1.0f);
-            GameObject hiddenBall = Instantiate(_ballPrefab);
-            _hiddenBallCollectable = hiddenBall.GetComponent<BallCollectable>();
-            _hiddenBallPosition = spawnPos + _pet.transform.right * 0.05f + Vector3.up * 0.06f;
-            _hiddenBallCollectable.PlaceHiddenBall(_hiddenBallPosition, 0);
-            _hiddenBallCollectable.SetState(BallCollectable.BallStatus.Unavailable);
-        }
-    }
-
+    
     /// <summary>
     /// When the player has the flashlight active, there should always be a hidden ball to discover.
     /// </summary>
@@ -1030,56 +930,6 @@ public class WorldBeyondManager : MonoBehaviour
     void KillControllerVibration()
     {
         OVRInput.SetControllerVibration(1, 0, _gameController);
-    }
-
-    /// <summary>
-    /// Find a position in the room to place Oppy.
-    /// </summary>
-    public Vector3 GetRandomPetPosition()
-    {
-        Vector3 floorPos = new Vector3(_mainCamera.transform.position.x, GetFloorHeight(), _mainCamera.transform.position.z);
-        Vector3 randomPos = _mainCamera.transform.position - _mainCamera.transform.forward;
-
-        // shoot rays out from player, a few cm above ground
-        Vector3 curbHeight = floorPos + Vector3.up * 0.2f;
-        // startingVec isn't based on -camera.forward because we "sweep" 180 degrees in the loop below
-        Vector3 startingVec = new Vector3(-_mainCamera.transform.right.x, curbHeight.y, -_mainCamera.transform.right.z).normalized;
-
-        // return the farthest position, behind player
-        // however, for each individual raycast, use the closest hit
-        // this avoids a bug where Oppy can spawn outside (from a ray aiming through a wall to another wall or wall edge)
-        float farthestOverallHit = 0.0f;
-        const float castDistance = 100.0f;
-        int sliceCount = 4;
-        for (int i = 0; i <= sliceCount; i++)
-        {
-            RaycastHit hitInfo;
-            LayerMask oppySpawnLayer = LayerMask.GetMask("RoomBox", "Furniture");
-            float closestRaycastHit = castDistance;
-            Vector3 candidatePosition = randomPos;
-            RaycastHit[] roomboxHit = Physics.RaycastAll(curbHeight, startingVec, castDistance, oppySpawnLayer);
-            foreach (RaycastHit hit in roomboxHit)
-            {
-                float thisHit = Vector3.Distance(curbHeight, hit.point);
-                if (thisHit < closestRaycastHit)
-                {
-                    closestRaycastHit = thisHit;
-                    candidatePosition = hit.point - startingVec * 0.5f; // back off from the impact point to give Oppy space
-                }
-            }
-
-            float distanceToHit = Vector3.Distance(curbHeight, candidatePosition);
-            if (distanceToHit > farthestOverallHit)
-            {
-                farthestOverallHit = distanceToHit;
-                randomPos = candidatePosition;
-            }
-
-            startingVec = Quaternion.Euler(0, -180.0f / sliceCount, 0) * startingVec;
-        }
-
-        randomPos = new Vector3(randomPos.x, GetFloorHeight(), randomPos.z);
-        return randomPos;
     }
 
     /// <summary>
@@ -1230,84 +1080,7 @@ public class WorldBeyondManager : MonoBehaviour
         }
         return point;
     }
-
-    /// <summary>
-    /// Start the coroutine that plays the UFO exit sequence.
-    /// </summary>
-    public void FlyAwayUFO()
-    {
-        StartCoroutine(DoEndingSequence());
-    }
-
-    /// <summary>
-    /// End game sequence and cleanup: fade to black, trigger the UFO animation, reset the game.
-    /// </summary>
-    IEnumerator DoEndingSequence()
-    {
-        AudioManager.SetSnapshot_Ending();
-        _fadeSphere.gameObject.SetActive(true);
-        _fadeSphere.sharedMaterial.SetColor("_Color", Color.clear);
-        if (_spaceShipAnimator)
-        {
-            _spaceShipAnimator.TriggerAnim();
-            float flyingAwayTime = 15.5f;
-            float timer = 0.0f;
-            while (timer < flyingAwayTime)
-            {
-                timer += Time.deltaTime;
-                float fadeValue = timer / flyingAwayTime;
-                fadeValue = Mathf.Clamp01((fadeValue - 0.9f) * 10.0f);
-                _fadeSphere.sharedMaterial.SetColor("_Color", Color.Lerp(Color.clear, Color.white, fadeValue));
-                WorldBeyondEnvironment.Instance.FadeOutdoorAudio(1 - fadeValue);
-                if (timer >= flyingAwayTime)
-                {
-                    WorldBeyondEnvironment.Instance.SetOutdoorAudioParams(Vector3.zero, false);
-                    _endScreen.SetActive(true);
-                    PositionTitleScreens(true);
-                    _fadeSphere.sharedMaterial.SetColor("_Color", Color.white);
-                    MultiToy.Instance.EndGame();
-                    DestroyAllBalls();
-                    _spaceShipAnimator.ResetAnim();
-                }
-                yield return null;
-            }
-
-            AudioManager.SetSnapshot_Reset();
-            yield return new WaitForSeconds(13.0f);
-            ForceChapter(GameChapter.Title);
-        }
-    }
-
-    /// <summary>
-    /// Choose a random animation for Oppy to play when the flashlight shines on her.
-    /// </summary>
-    public void PlayOppyDiscoveryAnim()
-    {
-        if (!_oppyDiscovered)
-        {
-            _oppyDiscovered = true;
-            // the final discovery, after which Oppy enters reality
-            if (_oppyDiscoveryCount == 2)
-            {
-                _pet._boneSim.gameObject.SetActive(true);
-                _pet.PlayRandomOppyDiscoveryAnim();
-                StartCoroutine(MalfunctionFlashlight());
-            }
-            // first discovery, play the unique discovery anim
-            else if (_oppyDiscoveryCount == 0)
-            {
-                _pet.PlayInitialDiscoveryAnim();
-                StartCoroutine(FlickerFlashlight(4.0f));
-            }
-            // second discovery, play a random "delight" anim
-            else
-            {
-                _pet.PlayRandomOppyDiscoveryAnim();
-                StartCoroutine(FlickerFlashlight(2.0f));
-            }
-        }
-    }
-
+    
     /// <summary>
     /// Dolly/rotate the title and end screens
     /// </summary>

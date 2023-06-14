@@ -164,21 +164,6 @@ public class MultiToy : MonoBehaviour
             }
         }
 
-        if (currentChapter == WorldBeyondManager.GameChapter.SearchForOppy)
-        {
-            Vector3 oppyPos = WorldBeyondManager.Instance._pet.transform.position + Vector3.up * 0.2f;
-            float oppyDot = Vector3.Dot(GetFlashlightDirection(), (oppyPos - transform.position).normalized);
-            bool oppyActive = WorldBeyondManager.Instance._pet.gameObject.activeSelf;
-            if (!WorldBeyondManager.Instance._oppyDiscovered)
-            {
-                if (oppyDot >= 0.95f && oppyActive)
-                {
-                    WorldBeyondManager.Instance.PlayOppyDiscoveryAnim();
-                    WorldBeyondManager.Instance._pet.PlaySparkles(false);
-                }
-            }
-        }
-
         var currentToyIndex = _toyIndexController;
         // switch toys, using hands
         if (WorldBeyondManager.Instance._usingHands)
