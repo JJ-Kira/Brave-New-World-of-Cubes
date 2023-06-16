@@ -21,8 +21,8 @@
 /************************************************************************************
  * Filename    :   ONSPPropagationInterface.cs
  * Content     :   Interface into the Oculus Audio propagation functions
-
  ***********************************************************************************/
+
 using System;
 using System.Runtime.InteropServices;
 using UnityEngine;

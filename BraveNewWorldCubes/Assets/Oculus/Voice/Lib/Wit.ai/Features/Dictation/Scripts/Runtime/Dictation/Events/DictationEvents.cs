@@ -7,54 +7,51 @@
  */
 
 using System;
-using Facebook.WitAi.Events;
-using Facebook.WitAi.Interfaces;
+using Meta.WitAi.Events;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.Serialization;
 
-namespace Facebook.WitAi.Dictation.Events
+namespace Meta.WitAi.Dictation.Events
 {
     [Serializable]
-    public class DictationEvents : ITranscriptionEvent, IAudioInputEvents
+    public class DictationEvents : SpeechEvents
     {
-        [Header("Transcription Events")]
-        [FormerlySerializedAs("OnPartialTranscription")]
-        [Tooltip("Message fired when a partial transcription has been received.")]
-        public WitTranscriptionEvent onPartialTranscription = new WitTranscriptionEvent();
+        private const string EVENT_CATEGORY_DICTATION_EVENTS = "Dictation Events";
 
-        [FormerlySerializedAs("OnFullTranscription")]
-        [Tooltip("Message received when a complete transcription is received.")]
-        public WitTranscriptionEvent onFullTranscription = new WitTranscriptionEvent();
+        /// <summary>
+        /// Called when an individual dictation session has started. This can include multiple server activations if
+        /// dictation is set up to automatically reactivate when the server endpoints an utterance.
+        /// </summary>
+        [Tooltip("Called when an individual dictation session has started. This can include multiple server activations if dictation is set up to automatically reactivate when the server endpoints an utterance.")]
+        [EventCategory(EVENT_CATEGORY_DICTATION_EVENTS)]
+        [FormerlySerializedAs("onDictationSessionStarted")] [SerializeField] [HideInInspector]
+        private DictationSessionEvent _onDictationSessionStarted = new DictationSessionEvent();
+        public DictationSessionEvent OnDictationSessionStarted => _onDictationSessionStarted;
 
-        [Tooltip("Called when a response from Wit.ai has been received")]
-        public WitResponseEvent onResponse = new WitResponseEvent();
+        /// <summary>
+        /// Called when a dictation is completed after Deactivate has been called or auto-reactivate is disabled.
+        /// </summary>
+        [Tooltip("Called when a dictation is completed after Deactivate has been called or auto-reactivate is disabled.")]
+        [EventCategory(EVENT_CATEGORY_DICTATION_EVENTS)]
+        [FormerlySerializedAs("onDictationSessionStopped")] [SerializeField] [HideInInspector]
+        private DictationSessionEvent _onDictationSessionStopped = new DictationSessionEvent();
+        public DictationSessionEvent OnDictationSessionStopped => _onDictationSessionStopped;
 
-        public UnityEvent onStart = new UnityEvent();
-
-        public UnityEvent onStopped = new UnityEvent();
-
-        public WitErrorEvent onError = new WitErrorEvent();
-
-        public DictationSessionEvent onDictationSessionStarted = new DictationSessionEvent();
-
-        public DictationSessionEvent onDictationSessionStopped = new DictationSessionEvent();
-
-        public WitMicLevelChangedEvent onMicAudioLevel = new WitMicLevelChangedEvent();
-
-        #region Shared Event API - Transcription
-
-        public WitTranscriptionEvent OnPartialTranscription => onPartialTranscription;
-        public WitTranscriptionEvent OnFullTranscription => onFullTranscription;
-
-        #endregion
-
-        #region Shared Event API - Microphone
-
-        public WitMicLevelChangedEvent OnMicAudioLevelChanged => onMicAudioLevel;
-        public UnityEvent OnMicStartedListening => onStart;
-        public UnityEvent OnMicStoppedListening => onStopped;
-
-        #endregion
+        // Deprecated events
+        [Obsolete("Deprecated for 'OnDictationSessionStarted' event")]
+        public DictationSessionEvent onDictationSessionStarted => OnDictationSessionStarted;
+        [Obsolete("Deprecated for 'OnDictationSessionStopped' event")]
+        public DictationSessionEvent onDictationSessionStopped => OnDictationSessionStopped;
+        [Obsolete("Deprecated for 'OnStartListening' event")]
+        public UnityEvent onStart => OnStartListening;
+        [Obsolete("Deprecated for 'OnStoppedListening' event")]
+        public UnityEvent onStopped => OnStoppedListening;
+        [Obsolete("Deprecated for 'OnMicLevelChanged' event")]
+        public WitMicLevelChangedEvent onMicAudioLevel => OnMicLevelChanged;
+        [Obsolete("Deprecated for 'OnError' event")]
+        public WitErrorEvent onError => OnError;
+        [Obsolete("Deprecated for 'OnResponse' event")]
+        public WitResponseEvent onResponse => OnResponse;
     }
 }

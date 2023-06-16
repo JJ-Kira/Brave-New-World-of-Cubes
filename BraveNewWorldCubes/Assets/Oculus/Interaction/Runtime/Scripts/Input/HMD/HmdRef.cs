@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) Meta Platforms, Inc. and affiliates.
  * All rights reserved.
  *
@@ -29,14 +29,14 @@ namespace Oculus.Interaction.Input
     /// </summary>
     public class HmdRef : MonoBehaviour, IHmd
     {
-        [SerializeField, Interface(typeof(Hmd))]
-        private MonoBehaviour _hmd;
+        [SerializeField, Interface(typeof(IHmd))]
+        private UnityEngine.Object _hmd;
         private IHmd Hmd;
 
-        public event Action HmdUpdated
+        public event Action WhenUpdated
         {
-            add => Hmd.HmdUpdated += value;
-            remove => Hmd.HmdUpdated -= value;
+            add => Hmd.WhenUpdated += value;
+            remove => Hmd.WhenUpdated -= value;
         }
 
         protected virtual void Awake()
@@ -46,12 +46,12 @@ namespace Oculus.Interaction.Input
 
         protected virtual void Start()
         {
-            Assert.IsNotNull(Hmd);
+            this.AssertField(Hmd, nameof(Hmd));
         }
 
-        public bool GetRootPose(out Pose pose)
+        public bool TryGetRootPose(out Pose pose)
         {
-            return Hmd.GetRootPose(out pose);
+            return Hmd.TryGetRootPose(out pose);
         }
 
         #region Inject
@@ -62,7 +62,7 @@ namespace Oculus.Interaction.Input
 
         public void InjectHmd(IHmd hmd)
         {
-            _hmd = hmd as MonoBehaviour;
+            _hmd = hmd as UnityEngine.Object;
             Hmd = hmd;
         }
         #endregion

@@ -23,7 +23,6 @@
  * Content     :   Exposes settings for Propagation
  ***********************************************************************************/
 
-
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;

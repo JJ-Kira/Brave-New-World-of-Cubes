@@ -28,7 +28,7 @@ namespace Oculus.Interaction
     public class ControllerOffset : MonoBehaviour
     {
         [SerializeField, Interface(typeof(IController))]
-        private MonoBehaviour _controller;
+        private UnityEngine.Object _controller;
         public IController Controller { get; private set; }
 
         [SerializeField]
@@ -36,8 +36,6 @@ namespace Oculus.Interaction
 
         [SerializeField]
         private Quaternion _rotation = Quaternion.identity;
-
-        private Pose _cachedPose = Pose.identity;
 
         protected bool _started = false;
 
@@ -49,7 +47,7 @@ namespace Oculus.Interaction
         protected virtual void Start()
         {
             this.BeginStart(ref _started);
-            Assert.IsNotNull(Controller);
+            this.AssertField(Controller, nameof(Controller));
             this.EndStart(ref _started);
         }
 
@@ -57,7 +55,7 @@ namespace Oculus.Interaction
         {
             if (_started)
             {
-                Controller.ControllerUpdated += HandleControllerUpdated;
+                Controller.WhenUpdated += HandleUpdated;
             }
         }
 
@@ -65,23 +63,23 @@ namespace Oculus.Interaction
         {
             if (_started)
             {
-                Controller.ControllerUpdated -= HandleControllerUpdated;
+                Controller.WhenUpdated -= HandleUpdated;
             }
         }
 
-        private void HandleControllerUpdated()
+        private void HandleUpdated()
         {
             if (Controller.TryGetPose(out Pose rootPose))
             {
-                GetOffset(ref _cachedPose);
-                _cachedPose.Postmultiply(rootPose);
-                transform.SetPose(_cachedPose);
+                Pose pose = new Pose(Controller.Scale * _offset, _rotation);
+                pose.Postmultiply(rootPose);
+                transform.SetPose(pose);
             }
         }
 
         public void GetOffset(ref Pose pose)
         {
-            pose.position = _offset;
+            pose.position = Controller.Scale * _offset;
             pose.rotation = _rotation;
         }
 
@@ -95,7 +93,7 @@ namespace Oculus.Interaction
 
         public void InjectController(IController controller)
         {
-            _controller = controller as MonoBehaviour;
+            _controller = controller as UnityEngine.Object;
             Controller = controller;
         }
 

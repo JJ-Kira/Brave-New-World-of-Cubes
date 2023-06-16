@@ -21,8 +21,8 @@
 /************************************************************************************
  * Filename    :   ONSPAmbisonicsNative.cs
  * Content     :   Native interface into the Oculus Ambisonics
-
  ***********************************************************************************/
+
 using UnityEngine;
 using System.Collections;
 using System.Runtime.InteropServices;

@@ -21,9 +21,9 @@
 /************************************************************************************
  * Filename    :   ONSPPropagationMaterialEditor.cs
  * Content     :   Propagation material editor class
-                   Attach to geometry to define material properties
-
+                Attach to geometry to define material properties
  ***********************************************************************************/
+
 using UnityEditor;
 using UnityEngine;
 

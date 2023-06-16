@@ -21,9 +21,9 @@
 /************************************************************************************
  * Filename    :   ONSPPropagationGeometryEditor.cs
  * Content     :   Geometry editor class
-                   Attach to geometry to define material properties
-
+                Attach to geometry to define material properties
  ***********************************************************************************/
+
 //#define ENABLE_DEBUG_EXPORT_OBJ
 
 using UnityEngine;

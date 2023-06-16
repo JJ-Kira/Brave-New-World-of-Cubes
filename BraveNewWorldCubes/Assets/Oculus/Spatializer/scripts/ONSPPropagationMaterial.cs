@@ -21,9 +21,9 @@
 /************************************************************************************
  * Filename    :   ONSPPropagationMaterial.cs
  * Content     :   Propagation material class
-                   Attach to geometry to define material properties
-
+                Attach to geometry to define material properties
  ***********************************************************************************/
+
 using System;
 using System.Linq;
 using System.Collections.Generic;

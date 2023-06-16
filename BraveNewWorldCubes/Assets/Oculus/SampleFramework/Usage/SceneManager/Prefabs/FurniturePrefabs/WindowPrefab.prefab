@@ -57,7 +57,6 @@ MeshRenderer:
   m_LightProbeUsage: 1
   m_ReflectionProbeUsage: 1
   m_RayTracingMode: 2
-  m_RayTraceProcedural: 0
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
@@ -84,7 +83,6 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
-  m_AdditionalVertexStreams: {fileID: 0}
 --- !u!114 &6927193570541543623
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -103,9 +101,17 @@ MonoBehaviour:
   ScalingY: 0
   PaddingY: 0
   PaddingYMax: 0
+  UseXRatio: 0
+  XRatioMultiplier: 1
   ScalingZ: 3
   PaddingZ: 0
   PaddingZMax: 0
+  NewSize: {x: 0.30000365, y: 0.30000365, z: 0.0629797}
+  DefaultSize: {x: 0.30000365, y: 0.30000365, z: 0.0629797}
+  Mesh: {fileID: 1049928748687988745, guid: 7a109b977f513824da5b75db64b1998d, type: 3}
+  Bounds:
+    m_Center: {x: 0, y: 0, z: 0}
+    m_Extent: {x: 0.15000182, y: 0.15000182, z: 0.03148985}
   _pivotTransform: {fileID: 805930218415294816}
 --- !u!1 &6917879020509524751
 GameObject:

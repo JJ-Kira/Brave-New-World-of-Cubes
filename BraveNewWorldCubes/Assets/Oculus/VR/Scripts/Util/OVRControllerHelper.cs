@@ -25,197 +25,285 @@ using UnityEngine;
 /// </summary>
 public class OVRControllerHelper : MonoBehaviour
 {
-	/// <summary>
-	/// The root GameObject that represents the Oculus Touch for Quest And RiftS Controller model (Left).
-	/// </summary>
-	public GameObject m_modelOculusTouchQuestAndRiftSLeftController;
+    /// <summary>
+    /// The root GameObject that represents the Oculus Touch for Quest And RiftS Controller model (Left).
+    /// </summary>
+    public GameObject m_modelOculusTouchQuestAndRiftSLeftController;
 
-	/// <summary>
-	/// The root GameObject that represents the Oculus Touch for Quest And RiftS Controller model (Right).
-	/// </summary>
-	public GameObject m_modelOculusTouchQuestAndRiftSRightController;
+    /// <summary>
+    /// The root GameObject that represents the Oculus Touch for Quest And RiftS Controller model (Right).
+    /// </summary>
+    public GameObject m_modelOculusTouchQuestAndRiftSRightController;
 
-	/// <summary>
-	/// The root GameObject that represents the Oculus Touch for Rift Controller model (Left).
-	/// </summary>
-	public GameObject m_modelOculusTouchRiftLeftController;
+    /// <summary>
+    /// The root GameObject that represents the Oculus Touch for Rift Controller model (Left).
+    /// </summary>
+    public GameObject m_modelOculusTouchRiftLeftController;
 
-	/// <summary>
-	/// The root GameObject that represents the Oculus Touch for Rift Controller model (Right).
-	/// </summary>
-	public GameObject m_modelOculusTouchRiftRightController;
+    /// <summary>
+    /// The root GameObject that represents the Oculus Touch for Rift Controller model (Right).
+    /// </summary>
+    public GameObject m_modelOculusTouchRiftRightController;
 
-	/// <summary>
-	/// The root GameObject that represents the Oculus Touch for Quest 2 Controller model (Left).
-	/// </summary>
-	public GameObject m_modelOculusTouchQuest2LeftController;
+    /// <summary>
+    /// The root GameObject that represents the Oculus Touch for Quest 2 Controller model (Left).
+    /// </summary>
+    public GameObject m_modelOculusTouchQuest2LeftController;
 
-	/// <summary>
-	/// The root GameObject that represents the Oculus Touch for Quest 2 Controller model (Right).
-	/// </summary>
-	public GameObject m_modelOculusTouchQuest2RightController;
+    /// <summary>
+    /// The root GameObject that represents the Oculus Touch for Quest 2 Controller model (Right).
+    /// </summary>
+    public GameObject m_modelOculusTouchQuest2RightController;
 
-	/// <summary>
-	/// The controller that determines whether or not to enable rendering of the controller model.
-	/// </summary>
-	public OVRInput.Controller m_controller;
+    /// <summary>
+    /// The root GameObject that represents the Meta Touch Pro Controller model (Left).
+    /// </summary>
+    public GameObject m_modelMetaTouchProLeftController;
 
-	/// <summary>
-	/// The animator component that contains the controller animation controller for animating buttons and triggers.
-	/// </summary>
-	private Animator m_animator;
+    /// <summary>
+    /// The root GameObject that represents the Meta Touch Pro Controller model (Right).
+    /// </summary>
+    public GameObject m_modelMetaTouchProRightController;
 
-	private GameObject m_activeController;
+    /// <summary>
+    /// The controller that determines whether or not to enable rendering of the controller model.
+    /// </summary>
+    public OVRInput.Controller m_controller;
 
-	private bool m_controllerModelsInitialized = false;
 
-	private bool m_hasInputFocus = true;
-	private bool m_hasInputFocusPrev = false;
+    /// <summary>
+    /// The animator component that contains the controller animation controller for animating buttons and triggers.
+    /// </summary>
+    private Animator m_animator;
 
-	private enum ControllerType
-	{
-		QuestAndRiftS = 1,
-		Rift = 2,
-		Quest2 = 3,
-	}
+    private GameObject m_activeController;
 
-	private ControllerType activeControllerType = ControllerType.Rift;
+    private bool m_controllerModelsInitialized = false;
 
-	private bool m_prevControllerConnected = false;
-	private bool m_prevControllerConnectedCached = false;
+    private bool m_hasInputFocus = true;
+    private bool m_hasInputFocusPrev = false;
 
-	void Start()
-	{
-		if (OVRManager.OVRManagerinitialized)
-		{
-			InitializeControllerModels();
-		}
-	}
+    private enum ControllerType
+    {
+        QuestAndRiftS = 1,
+        Rift = 2,
+        Quest2 = 3,
+        TouchPro = 4,
+    }
 
-	void InitializeControllerModels()
-	{
-		if (m_controllerModelsInitialized)
-			return;
-	
-		OVRPlugin.SystemHeadset headset = OVRPlugin.GetSystemHeadsetType();
-		switch (headset)
-		{
-			case OVRPlugin.SystemHeadset.Rift_CV1:
-				activeControllerType = ControllerType.Rift;
-				break;
-			case OVRPlugin.SystemHeadset.Oculus_Quest_2:
-				activeControllerType = ControllerType.Quest2;
-				break;
-			case OVRPlugin.SystemHeadset.Oculus_Link_Quest_2:
-				activeControllerType = ControllerType.Quest2;
-				break;
-			default:
-				activeControllerType = ControllerType.QuestAndRiftS;
-				break;
-		}
+    private ControllerType activeControllerType = ControllerType.Rift;
 
-		Debug.LogFormat("OVRControllerHelp: Active controller type: {0} for product {1} (headset {2})", activeControllerType, OVRPlugin.productName, headset);
+    private bool m_prevControllerConnected = false;
+    private bool m_prevControllerConnectedCached = false;
 
-		// Hide all controller models until controller get connected
-		m_modelOculusTouchQuestAndRiftSLeftController.SetActive(false);
-		m_modelOculusTouchQuestAndRiftSRightController.SetActive(false);
-		m_modelOculusTouchRiftLeftController.SetActive(false);
-		m_modelOculusTouchRiftRightController.SetActive(false);
-		m_modelOculusTouchQuest2LeftController.SetActive(false);
-		m_modelOculusTouchQuest2RightController.SetActive(false);
 
-		OVRManager.InputFocusAcquired += InputFocusAquired;
-		OVRManager.InputFocusLost += InputFocusLost;
+    void Start()
+    {
+        if (OVRManager.OVRManagerinitialized)
+        {
+            InitializeControllerModels();
+        }
+    }
 
-		m_controllerModelsInitialized = true;
-	}
+    void InitializeControllerModels()
+    {
+        if (m_controllerModelsInitialized)
+            return;
 
-	void Update()
-	{
-		if (!m_controllerModelsInitialized)
-		{
-			if (OVRManager.OVRManagerinitialized)
-			{
-				InitializeControllerModels();
-			}
-			else
-			{
-				return;
-			}
-		}
+        OVRPlugin.SystemHeadset headset = OVRPlugin.GetSystemHeadsetType();
+        OVRPlugin.Hand controllerHand = m_controller == OVRInput.Controller.LTouch
+            ? OVRPlugin.Hand.HandLeft
+            : OVRPlugin.Hand.HandRight;
+        OVRPlugin.InteractionProfile profile = OVRPlugin.GetCurrentInteractionProfile(controllerHand);
 
-		bool controllerConnected = OVRInput.IsControllerConnected(m_controller);
+        switch (headset)
+        {
+            case OVRPlugin.SystemHeadset.Rift_CV1:
+                activeControllerType = ControllerType.Rift;
+                break;
+            case OVRPlugin.SystemHeadset.Oculus_Quest_2:
+                if (profile == OVRPlugin.InteractionProfile.TouchPro)
+                {
+                    activeControllerType = ControllerType.TouchPro;
+                }
+                else
+                {
+                    activeControllerType = ControllerType.Quest2;
+                }
 
-		if ((controllerConnected != m_prevControllerConnected) || !m_prevControllerConnectedCached || (m_hasInputFocus != m_hasInputFocusPrev))
-		{
-			if (activeControllerType == ControllerType.Rift)
-			{
-				m_modelOculusTouchQuestAndRiftSLeftController.SetActive(false);
-				m_modelOculusTouchQuestAndRiftSRightController.SetActive(false);
-				m_modelOculusTouchRiftLeftController.SetActive(controllerConnected && (m_controller == OVRInput.Controller.LTouch));
-				m_modelOculusTouchRiftRightController.SetActive(controllerConnected && (m_controller == OVRInput.Controller.RTouch));
-				m_modelOculusTouchQuest2LeftController.SetActive(false);
-				m_modelOculusTouchQuest2RightController.SetActive(false);
+                break;
+            case OVRPlugin.SystemHeadset.Oculus_Link_Quest_2:
+                if (profile == OVRPlugin.InteractionProfile.TouchPro)
+                {
+                    activeControllerType = ControllerType.TouchPro;
+                }
+                else
+                {
+                    activeControllerType = ControllerType.Quest2;
+                }
 
-				m_animator = m_controller == OVRInput.Controller.LTouch ? m_modelOculusTouchRiftLeftController.GetComponent<Animator>() :
-					m_modelOculusTouchRiftRightController.GetComponent<Animator>();
-				m_activeController = m_controller == OVRInput.Controller.LTouch ? m_modelOculusTouchRiftLeftController : m_modelOculusTouchRiftRightController;
-			}
-			else if (activeControllerType == ControllerType.Quest2)
-			{
-				m_modelOculusTouchQuestAndRiftSLeftController.SetActive(false);
-				m_modelOculusTouchQuestAndRiftSRightController.SetActive(false);
-				m_modelOculusTouchRiftLeftController.SetActive(false);
-				m_modelOculusTouchRiftRightController.SetActive(false);
-				m_modelOculusTouchQuest2LeftController.SetActive(controllerConnected && (m_controller == OVRInput.Controller.LTouch));
-				m_modelOculusTouchQuest2RightController.SetActive(controllerConnected && (m_controller == OVRInput.Controller.RTouch));
+                break;
+            case OVRPlugin.SystemHeadset.Meta_Quest_Pro:
+                activeControllerType = ControllerType.TouchPro;
+                break;
+            case OVRPlugin.SystemHeadset.Meta_Link_Quest_Pro:
+                activeControllerType = ControllerType.TouchPro;
+                break;
+            default:
+                activeControllerType = ControllerType.QuestAndRiftS;
+                break;
+        }
 
-				m_animator = m_controller == OVRInput.Controller.LTouch ? m_modelOculusTouchQuest2LeftController.GetComponent<Animator>() :
-					m_modelOculusTouchQuest2RightController.GetComponent<Animator>();
-				m_activeController = m_controller == OVRInput.Controller.LTouch ? m_modelOculusTouchQuest2LeftController : m_modelOculusTouchQuest2RightController;
-			}
-			else /*if (activeControllerType == ControllerType.QuestAndRiftS)*/
-			{
-				m_modelOculusTouchQuestAndRiftSLeftController.SetActive(controllerConnected && (m_controller == OVRInput.Controller.LTouch));
-				m_modelOculusTouchQuestAndRiftSRightController.SetActive(controllerConnected && (m_controller == OVRInput.Controller.RTouch));
-				m_modelOculusTouchRiftLeftController.SetActive(false);
-				m_modelOculusTouchRiftRightController.SetActive(false);
-				m_modelOculusTouchQuest2LeftController.SetActive(false);
-				m_modelOculusTouchQuest2RightController.SetActive(false);
+        Debug.LogFormat("OVRControllerHelp: Active controller type: {0} for product {1} (headset {2}, hand {3})",
+            activeControllerType, OVRPlugin.productName, headset, controllerHand);
 
-				m_animator = m_controller == OVRInput.Controller.LTouch ? m_modelOculusTouchQuestAndRiftSLeftController.GetComponent<Animator>() :
-					m_modelOculusTouchQuestAndRiftSRightController.GetComponent<Animator>();
-				m_activeController = m_controller == OVRInput.Controller.LTouch ? m_modelOculusTouchQuestAndRiftSLeftController : m_modelOculusTouchQuestAndRiftSRightController;
-			}
+        // Hide all controller models until controller get connected
+        m_modelOculusTouchQuestAndRiftSLeftController.SetActive(false);
+        m_modelOculusTouchQuestAndRiftSRightController.SetActive(false);
+        m_modelOculusTouchRiftLeftController.SetActive(false);
+        m_modelOculusTouchRiftRightController.SetActive(false);
+        m_modelOculusTouchQuest2LeftController.SetActive(false);
+        m_modelOculusTouchQuest2RightController.SetActive(false);
+        m_modelMetaTouchProLeftController.SetActive(false);
+        m_modelMetaTouchProRightController.SetActive(false);
 
-			m_activeController.SetActive(m_hasInputFocus && controllerConnected);
+        OVRManager.InputFocusAcquired += InputFocusAquired;
+        OVRManager.InputFocusLost += InputFocusLost;
 
-			m_prevControllerConnected = controllerConnected;
-			m_prevControllerConnectedCached = true;
-			m_hasInputFocusPrev = m_hasInputFocus;
-		}
+        m_controllerModelsInitialized = true;
+    }
 
-		if (m_animator != null)
-		{
-			m_animator.SetFloat("Button 1", OVRInput.Get(OVRInput.Button.One, m_controller) ? 1.0f : 0.0f);
-			m_animator.SetFloat("Button 2", OVRInput.Get(OVRInput.Button.Two, m_controller) ? 1.0f : 0.0f);
-			m_animator.SetFloat("Button 3", OVRInput.Get(OVRInput.Button.Start, m_controller) ? 1.0f : 0.0f);
+    void Update()
+    {
+        if (!m_controllerModelsInitialized)
+        {
+            if (OVRManager.OVRManagerinitialized)
+            {
+                InitializeControllerModels();
+            }
+            else
+            {
+                return;
+            }
+        }
 
-			m_animator.SetFloat("Joy X", OVRInput.Get(OVRInput.Axis2D.PrimaryThumbstick, m_controller).x);
-			m_animator.SetFloat("Joy Y", OVRInput.Get(OVRInput.Axis2D.PrimaryThumbstick, m_controller).y);
 
-			m_animator.SetFloat("Trigger", OVRInput.Get(OVRInput.Axis1D.PrimaryIndexTrigger, m_controller));
-			m_animator.SetFloat("Grip", OVRInput.Get(OVRInput.Axis1D.PrimaryHandTrigger, m_controller));
-		}
-	}
+        bool controllerConnected = OVRInput.IsControllerConnected(m_controller);
 
-	public void InputFocusAquired()
-	{
-		m_hasInputFocus = true;
-	}
+        if ((controllerConnected != m_prevControllerConnected) || !m_prevControllerConnectedCached ||
+            (m_hasInputFocus != m_hasInputFocusPrev))
+        {
+            if (activeControllerType == ControllerType.Rift)
+            {
+                m_modelOculusTouchQuestAndRiftSLeftController.SetActive(false);
+                m_modelOculusTouchQuestAndRiftSRightController.SetActive(false);
+                m_modelOculusTouchRiftLeftController.SetActive(controllerConnected &&
+                                                               (m_controller == OVRInput.Controller.LTouch));
+                m_modelOculusTouchRiftRightController.SetActive(controllerConnected &&
+                                                                (m_controller == OVRInput.Controller.RTouch));
+                m_modelOculusTouchQuest2LeftController.SetActive(false);
+                m_modelOculusTouchQuest2RightController.SetActive(false);
+                m_modelMetaTouchProLeftController.SetActive(false);
+                m_modelMetaTouchProRightController.SetActive(false);
 
-	public void InputFocusLost()
-	{
-		m_hasInputFocus = false;
-	}
+                m_animator = m_controller == OVRInput.Controller.LTouch
+                    ? m_modelOculusTouchRiftLeftController.GetComponent<Animator>()
+                    : m_modelOculusTouchRiftRightController.GetComponent<Animator>();
+                m_activeController = m_controller == OVRInput.Controller.LTouch
+                    ? m_modelOculusTouchRiftLeftController
+                    : m_modelOculusTouchRiftRightController;
+            }
+            else if (activeControllerType == ControllerType.Quest2)
+            {
+                m_modelOculusTouchQuestAndRiftSLeftController.SetActive(false);
+                m_modelOculusTouchQuestAndRiftSRightController.SetActive(false);
+                m_modelOculusTouchRiftLeftController.SetActive(false);
+                m_modelOculusTouchRiftRightController.SetActive(false);
+                m_modelOculusTouchQuest2LeftController.SetActive(controllerConnected &&
+                                                                 (m_controller == OVRInput.Controller.LTouch));
+                m_modelOculusTouchQuest2RightController.SetActive(controllerConnected &&
+                                                                  (m_controller == OVRInput.Controller.RTouch));
+                m_modelMetaTouchProLeftController.SetActive(false);
+                m_modelMetaTouchProRightController.SetActive(false);
+
+                m_animator = m_controller == OVRInput.Controller.LTouch
+                    ? m_modelOculusTouchQuest2LeftController.GetComponent<Animator>()
+                    : m_modelOculusTouchQuest2RightController.GetComponent<Animator>();
+                m_activeController = m_controller == OVRInput.Controller.LTouch
+                    ? m_modelOculusTouchQuest2LeftController
+                    : m_modelOculusTouchQuest2RightController;
+            }
+            else if (activeControllerType == ControllerType.QuestAndRiftS)
+            {
+                m_modelOculusTouchQuestAndRiftSLeftController.SetActive(controllerConnected &&
+                                                                        (m_controller == OVRInput.Controller.LTouch));
+                m_modelOculusTouchQuestAndRiftSRightController.SetActive(controllerConnected &&
+                                                                         (m_controller == OVRInput.Controller.RTouch));
+                m_modelOculusTouchRiftLeftController.SetActive(false);
+                m_modelOculusTouchRiftRightController.SetActive(false);
+                m_modelOculusTouchQuest2LeftController.SetActive(false);
+                m_modelOculusTouchQuest2RightController.SetActive(false);
+                m_modelMetaTouchProLeftController.SetActive(false);
+                m_modelMetaTouchProRightController.SetActive(false);
+
+                m_animator = m_controller == OVRInput.Controller.LTouch
+                    ? m_modelOculusTouchQuestAndRiftSLeftController.GetComponent<Animator>()
+                    : m_modelOculusTouchQuestAndRiftSRightController.GetComponent<Animator>();
+                m_activeController = m_controller == OVRInput.Controller.LTouch
+                    ? m_modelOculusTouchQuestAndRiftSLeftController
+                    : m_modelOculusTouchQuestAndRiftSRightController;
+            }
+            else /*if (activeControllerType == ControllerType.TouchPro)*/
+            {
+                m_modelOculusTouchQuestAndRiftSLeftController.SetActive(false);
+                m_modelOculusTouchQuestAndRiftSRightController.SetActive(false);
+                m_modelOculusTouchRiftLeftController.SetActive(false);
+                m_modelOculusTouchRiftRightController.SetActive(false);
+                m_modelOculusTouchQuest2LeftController.SetActive(false);
+                m_modelOculusTouchQuest2RightController.SetActive(false);
+                m_modelMetaTouchProLeftController.SetActive(controllerConnected &&
+                                                            (m_controller == OVRInput.Controller.LTouch));
+                m_modelMetaTouchProRightController.SetActive(controllerConnected &&
+                                                             (m_controller == OVRInput.Controller.RTouch));
+
+                m_animator = m_controller == OVRInput.Controller.LTouch
+                    ? m_modelMetaTouchProLeftController.GetComponent<Animator>()
+                    : m_modelMetaTouchProRightController.GetComponent<Animator>();
+                m_activeController = m_controller == OVRInput.Controller.LTouch
+                    ? m_modelMetaTouchProLeftController
+                    : m_modelMetaTouchProRightController;
+            }
+
+            bool shouldSetControllerActive = m_hasInputFocus && controllerConnected;
+
+            m_activeController.SetActive(shouldSetControllerActive);
+
+            m_prevControllerConnected = controllerConnected;
+            m_prevControllerConnectedCached = true;
+            m_hasInputFocusPrev = m_hasInputFocus;
+        }
+
+        if (m_animator != null)
+        {
+            m_animator.SetFloat("Button 1", OVRInput.Get(OVRInput.Button.One, m_controller) ? 1.0f : 0.0f);
+            m_animator.SetFloat("Button 2", OVRInput.Get(OVRInput.Button.Two, m_controller) ? 1.0f : 0.0f);
+            m_animator.SetFloat("Button 3", OVRInput.Get(OVRInput.Button.Start, m_controller) ? 1.0f : 0.0f);
+
+            m_animator.SetFloat("Joy X", OVRInput.Get(OVRInput.Axis2D.PrimaryThumbstick, m_controller).x);
+            m_animator.SetFloat("Joy Y", OVRInput.Get(OVRInput.Axis2D.PrimaryThumbstick, m_controller).y);
+
+            m_animator.SetFloat("Trigger", OVRInput.Get(OVRInput.Axis1D.PrimaryIndexTrigger, m_controller));
+            m_animator.SetFloat("Grip", OVRInput.Get(OVRInput.Axis1D.PrimaryHandTrigger, m_controller));
+        }
+    }
+
+    public void InputFocusAquired()
+    {
+        m_hasInputFocus = true;
+    }
+
+    public void InputFocusLost()
+    {
+        m_hasInputFocus = false;
+    }
 }

@@ -24,7 +24,8 @@ namespace Oculus.Interaction
 {
     public interface IDistanceInteractor : IInteractorView
     {
-        Ray Pointer { get; }
-        IDistanceInteractable DistanceInteractable { get; }
+        Pose Origin { get; }
+        Vector3 HitPoint { get; }
+        IRelativeToRef DistanceInteractable { get; }
     }
 }

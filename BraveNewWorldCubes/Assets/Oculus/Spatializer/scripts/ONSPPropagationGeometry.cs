@@ -21,10 +21,10 @@
 /************************************************************************************
  * Filename    :   ONSPPropagationGeometry.cs
  * Content     :   Geometry Functions
-                   Attach to a game object with meshes and material scripts to create geometry
-                   NOTE: ensure that Oculus Spatialization is enabled for AudioSource components
-
+                Attach to a game object with meshes and material scripts to create geometry
+                NOTE: ensure that Oculus Spatialization is enabled for AudioSource components
  ***********************************************************************************/
+
 #define INCLUDE_TERRAIN_TREES
 
 using UnityEngine;
