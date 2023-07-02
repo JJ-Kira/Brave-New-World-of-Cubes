@@ -2747,7 +2747,7 @@ public static partial class OVRPlugin
         get
         {
 #if OVRPLUGIN_UNSUPPORTED_PLATFORM
-            return true;
+            return false;
 #else
             return OVRP_1_1_0.ovrp_GetInitialized() == OVRPlugin.Bool.True;
 #endif
