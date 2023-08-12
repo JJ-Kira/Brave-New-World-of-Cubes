@@ -44,12 +44,12 @@ Shader "Custom/Geometry" {
                 const float2 uv0 = uv;
                 float3 finalColor = float3(0.0, 0.0, 0.0);
 
-                for (float j = 0.0; j < 4.0; j++) {
+                for (float j = 0.0; j < 5.0; j++) {
                     uv = frac(uv * 1.5) - 0.5;
 
                     float d = length(uv) * exp(-length(uv0));
 
-                    const float3 col = palette(length(uv0) + j * 0.4 + _Time.y * 0.4);
+                    const float3 col = palette(length(uv0) * 0.4 + _Time.y * 0.1);
 
                     d = sin(d * 8.0 + _Time.y) / 8.0;
                     d = abs(d);
@@ -59,7 +59,7 @@ Shader "Custom/Geometry" {
                     finalColor += col * d;
                 }
 
-                return fixed4(finalColor, 1.0);
+                return fixed4(finalColor * 0.2, 1.0);
             }
             ENDCG
         }
