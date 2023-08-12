@@ -4,15 +4,12 @@ using UnityEngine;
 
 public class RotateAnim : MonoBehaviour
 {
-    // Start is called before the first frame update
-    void Start()
-    {
-        
-    }
+    public float rotateSpeed = 1.0f;
+    public Vector3 rotateVector = Vector3.up;
 
     // Update is called once per frame
     void Update()
     {
-        
+        this.transform.RotateAround(this.transform.position, rotateVector, rotateSpeed * Time.deltaTime);
     }
 }
