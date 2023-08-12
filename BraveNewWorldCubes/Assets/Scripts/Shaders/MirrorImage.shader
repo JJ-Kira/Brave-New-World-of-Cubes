@@ -53,7 +53,7 @@ Shader "Custom/MirrorImageCubeRotating"
                 
                 for (float j = 0., t = _Time.y * 0.5; j < 46.; j++)
                 {
-                    O += 0.002 / abs(abs(u.x - sin(t + j * 0.17) * 0.7) + u.y - sin(t + j * 0.1) * 0.6) * (cos(j + half4(0, 1, 2, 0)) + 1.2);
+                    O += 0.0012 / abs(abs(u.x - sin(t + j * 0.17) * 0.7) + u.y - sin(t + j * 0.1) * 0.6) * (cos(j + half4(0, 1, 2, 0)) + 0.4);
                 }
 
                 return O;
