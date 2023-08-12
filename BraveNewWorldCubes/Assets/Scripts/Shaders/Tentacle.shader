@@ -59,7 +59,7 @@ Shader "Custom/Tentacle"
                 const float2 u = (i.uv - float2(0.5, 0.5)) * 2.0;
                 half4 O = half4(0,0,0,1);
                 for (float s = 0.; s < 3.; s++) {
-                    float p = 9.;
+                    float p = 3.;
                     for (float j = 0.; j < 25.; j++) {
                         const float angle = j * sin(n * PI * 2.) * 0.25;
                         const float2 rotatedU = rot(angle, u);
@@ -75,7 +75,7 @@ Shader "Custom/Tentacle"
 
                         p = min(p, step1 + step2 + step3);
                     }
-                    O[int(s)] = .1/p; 
+                    O[int(s)] = .02/p; 
                 }
                 return O;
             }

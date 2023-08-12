@@ -138,8 +138,10 @@ PlayerSettings:
   preloadedAssets:
   - {fileID: 0}
   - {fileID: 0}
-  - {fileID: 11400000, guid: 2f10ed4ba0dc47a45976f11265b2491e, type: 2}
-  - {fileID: 11400000, guid: a8f40f13297179f4bbd7057e503d8aff, type: 2}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: -3564551840446355276, guid: f14e0711101d11b459093dae3f5eb719, type: 2}
+  - {fileID: 4800000, guid: c9f956787b1d945e7b36e0516201fc76, type: 3}
   metroInputSource: 0
   wsaTransparentSwapchain: 0
   m_HolographicPauseOnTrackingLoss: 1
@@ -159,7 +161,7 @@ PlayerSettings:
   androidSupportedAspectRatio: 1
   androidMaxAspectRatio: 2.1
   applicationIdentifier:
-    Android: com.bubu.bu
+    Android: com.bubu.arbu
     Standalone: com.Tersus-Codice.Brave-New-World-of-Cubes
   buildNumber:
     Standalone: 0

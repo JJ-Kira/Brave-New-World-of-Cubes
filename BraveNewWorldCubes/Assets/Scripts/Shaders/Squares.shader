@@ -47,7 +47,7 @@ Shader "Custom/Squares"
 
                 for (float j = 0.0; j < 20.0; j++)
                 {
-                    color += (0.004 / (abs(length(u * u) - j * 0.04) + 0.005)) 
+                    color += (0.002 / (abs(length(u * u) - j * 0.04) + 0.001)) 
                             * (cos(j + fixed3(0, 1, 2)) + 1.0) 
                             * smoothstep(0.35, 0.4, abs(abs(fmod(time, 2.0) - j * 0.1) - 1.0));
                     const float speed = 0.1;
@@ -55,7 +55,7 @@ Shader "Custom/Squares"
                     u = mul(u, rotationMatrix);
                 }
 
-                return fixed4(color, 1.0);
+                return fixed4(color , 1);
             }
 
             ENDCG
