@@ -21,10 +21,10 @@ Shader "Custom/Geometry" {
             };
 
             float3 palette(float t) {
-                float3 a = float3(0.5, 0.5, 0.5);
-                float3 b = float3(0.5, 0.5, 0.5);
-                float3 c = float3(1.0, 1.0, 1.0);
-                float3 d = float3(0.263, 0.416, 0.557);
+                const float3 a = float3(0.5, 0.5, 0.5);
+                const float3 b = float3(0.5, 0.5, 0.5);
+                const float3 c = float3(1.0, 1.0, 1.0);
+                const float3 d = float3(0.263, 0.416, 0.557);
 
                 return a + b * cos(6.28318 * (c * t + d));
             }
@@ -41,7 +41,7 @@ Shader "Custom/Geometry" {
 
             fixed4 frag(v2f i) : SV_Target {
                 float2 uv = (i.uv * 2.0 - _MainTex_ST.xy) / _MainTex_ST.y;
-                float2 uv0 = uv;
+                const float2 uv0 = uv;
                 float3 finalColor = float3(0.0, 0.0, 0.0);
 
                 for (float j = 0.0; j < 4.0; j++) {
@@ -49,7 +49,7 @@ Shader "Custom/Geometry" {
 
                     float d = length(uv) * exp(-length(uv0));
 
-                    float3 col = palette(length(uv0) + j * 0.4 + _Time.y * 0.4);
+                    const float3 col = palette(length(uv0) + j * 0.4 + _Time.y * 0.4);
 
                     d = sin(d * 8.0 + _Time.y) / 8.0;
                     d = abs(d);

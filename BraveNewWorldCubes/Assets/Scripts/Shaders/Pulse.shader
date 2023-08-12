@@ -33,9 +33,9 @@ Shader "Custom/Pulse" {
             }
 
             fixed4 frag(v2f i) : SV_Target {
-                float3 sphereCoord = float3(i.uv, -1.0);
+                const float3 sphereCoord = float3(i.uv, -1.0);
                 float3 cubeCoord = normalize(sphereCoord);
-                float2 u = cubeCoord.xy * 0.5 + 0.5;
+                const float2 u = cubeCoord.xy * 0.5 + 0.5;
 
                 fixed3 finalColor = fixed3(0.0, 0.0, 0.0); // Initialize with black
 
@@ -43,9 +43,9 @@ Shader "Custom/Pulse" {
                     float d = abs(length(u * u) - j * 0.04) + 0.005;
                     d = 0.004 / d;
 
-                    float3 col = (cos(j + float3(0, 1, 2)) + 1.0) * 0.5;
+                    const float3 col = (cos(j + float3(0, 1, 2)) + 1.0) * 0.5;
 
-                    float anim = smoothstep(0.35, 0.4, abs(abs(fmod(_Time.y, 2.0) - j * 0.1) - 1.0));
+                    const float anim = smoothstep(0.35, 0.4, abs(abs(fmod(_Time.y, 2.0) - j * 0.1) - 1.0));
 
                     finalColor += col * d * anim;
                 }
