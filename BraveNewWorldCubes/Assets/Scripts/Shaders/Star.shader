@@ -49,12 +49,12 @@ Shader "Custom/DancingStarCube"
                 float iter = 0.0;
                 fixed4 O = fixed4(0, 0, 0, 1);
 
-                for (O *= iter; iter < 8.0; iter += 0.05)
+                for (O *= iter; iter < 2.0; iter += 0.05)
                 {
                     u = mul(u, float2x2(cos(2.5), sin(2.5), -sin(2.5), cos(2.5)));
                     O += pow(
-                        0.006/length(u/r.y/0.3+sin(iter+float2(_Time.y*0.5,_Time.y+1.0)))
-                        *(cos(iter*6.0+float4(0,1,2,0))+1.0), O-O+1.95);
+                        0.017/length(u/r.y/0.3+sin(iter+float2(_Time.y*0.5,_Time.y+1.0)))
+                        *(cos(iter*6.0+float4(0,1,2,0))+1.0), O-O+1.85);
                 }
 
                 return O;
