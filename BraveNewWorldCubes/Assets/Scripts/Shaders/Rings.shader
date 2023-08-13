@@ -1,4 +1,4 @@
-Shader "Custom/MirrorImageCubeRotating"
+Shader "Custom/CirclePatternOnCube"
 {
     Properties
     {
@@ -38,25 +38,20 @@ Shader "Custom/MirrorImageCubeRotating"
 
             half4 frag (v2f i) : SV_Target
             {
-                // Center the UV coordinates around (0.5, 0.5) for rotation
-                float2 centeredUV = i.uv - 0.5;
+                float g = 0, o = 0, f = 3.;
+                float2 n = i.uv * 2.0 - 1.0;
 
-                // Compute rotation matrix
-                float angle = _Time.y;
-                float2x2 rotationMatrix = float2x2(cos(angle), -sin(angle), sin(angle), cos(angle));
-
-                // Apply rotation
-                float2 rotatedUV = mul(centeredUV, rotationMatrix) + 0.5;
-
-                float2 u = abs(2.0 * rotatedUV - 1.0);
-                half4 O = half4(0, 0, 0, 1);
-                
-                for (float j = 0., t = _Time.y * 0.5; j < 46.; j++)
+                while (g++ < 2e2 && f > 0.001)
                 {
-                    O += 0.0012 / abs(abs(u.x - sin(t + j * 0.17) * 0.7) + u.y - sin(t + j * 0.1) * 0.6) * (cos(j + half4(0, 1, 2, 0)) + 0.4);
+                    float3 e = o * normalize(float3(n, 1.0));
+                    e.z += _Time.y * 0.5;
+                    const float l = floor(e.z + 0.5);
+                    f = 2.0 - length(e.xy) - o * 0.1;
+                    e = frac(e + 0.5) - 0.5;
+                    o += f = 0.5 * max(f, length(float2(length(e.xy) - lerp(0.1, 0.5, cos(2.0 * (l + _Time.y * 0.1)) * 0.5 + 0.5), e.z)) - lerp(0.05, lerp(0.1, 0.4, cos(0.5 * (1.6 + l + _Time.y * 0.1)) * 0.5 + 0.5), cos(1.0 * (1.6 + l + _Time.y * 0.1)) * 0.5 + 0.5));
                 }
 
-                return O;
+                return half4((cos(o * 8.0 + float3(0, 1, 2) * 0.8) * 5.0) / exp(o * 0.2 + length(n)), 1.0);
             }
             ENDCG
         }

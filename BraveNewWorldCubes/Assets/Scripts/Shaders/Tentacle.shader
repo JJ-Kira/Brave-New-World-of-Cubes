@@ -40,7 +40,7 @@ Shader "Custom/Tentacle"
             }
 
             #define PI 3.141592
-            #define n (-_Time.y*.04+.03)
+            #define n (-_Time.y * 0.04 + 0.03)
 
             float2 rot(float a, float2 v)
             {
@@ -51,31 +51,31 @@ Shader "Custom/Tentacle"
 
             float S(float a, float b, float d)
             {
-                return lerp(a, b, 0.5 * sin(d + n * PI * 2.) + 0.5);
+                return lerp(a, b, 0.5 * sin(d + n * PI * 2.0) + 0.5);
             }
 
             half4 frag (v2f i) : SV_Target
             {
                 const float2 u = (i.uv - float2(0.5, 0.5)) * 2.0;
-                half4 O = half4(0,0,0,1);
-                for (float s = 0.; s < 3.; s++) {
-                    float p = 9.;
-                    for (float j = 0.; j < 25.; j++) {
-                        const float angle = j * sin(n * PI * 2.) * 0.25;
+                half4 O = half4(0, 0, 0, 1);
+                for (float s = 0.; s < 3.0; s++) {
+                    float p = 3.0;
+                    for (float j = 0.0; j < 25.0; j++) {
+                        const float angle = j * sin(n * PI * 2.0) * 0.25;
                         const float2 rotatedU = rot(angle, u);
-                        const float scale = j + S(1., 4., PI / 2.);
+                        const float scale = j + S(1.0, 4.0, PI / 2.0);
                         float2 a = frac(rotatedU * scale + 0.5) - 0.5;
 
-                        const float r = lerp(length(a), abs(a.x) + abs(a.y), S(0., 1., 0.));
-                        const float t = abs(r + 0.1 - s * 0.02 - j * S(0.005, 0.05, 0.));
+                        const float r = lerp(length(a), abs(a.x) + abs(a.y), S(0.0, 1.0, 0.0));
+                        const float t = abs(r + 0.1 - s * 0.02 - j * S(0.005, 0.05, 0.0));
 
-                        const float step1 = smoothstep(0., 0.1 + s * j * S(0., 0.015, PI), t * S(s * 0.1 + 0.14, 0.2, 0.));
-                        const float step2 = smoothstep(0., 20., j * S(0.45, 1., 0.));
-                        const float step3 = smoothstep(0., 1., length(u) * j * 0.08);
+                        const float step1 = smoothstep(0.0, 0.1 + s * j * S(0.0, 0.015, PI), t * S(s * 0.1 + 0.14, 0.2, 0.0));
+                        const float step2 = smoothstep(0.0, 20.0, j * S(0.45, 1.0, 0.0));
+                        const float step3 = smoothstep(0.0, 1.0, length(u) * j * 0.08);
 
                         p = min(p, step1 + step2 + step3);
                     }
-                    O[int(s)] = .1/p; 
+                    O[int(s)] = 0.02 / p; 
                 }
                 return O;
             }

@@ -40,14 +40,14 @@ Shader "Custom/Pulse" {
                 fixed3 finalColor = fixed3(0.0, 0.0, 0.0); // Initialize with black
 
                 for (float j = 0.0; j < 20.0; j++) {
-                    float d = abs(length(u * u) - j * 0.04) + 0.005;
-                    d = 0.004 / d;
+                    float d = abs(length(u * u) - j * 0.04) + 0.001;
+                    d = 0.003 / d;
 
-                    const float3 col = (cos(j + float3(0, 1, 2)) + 1.0) * 0.5;
+                    const float3 col = (cos(j + float3(0, 1, 2)) + 1.0) * 0.8;
 
                     const float anim = smoothstep(0.35, 0.4, abs(abs(fmod(_Time.y, 2.0) - j * 0.1) - 1.0));
 
-                    finalColor += col * d * anim;
+                    finalColor += col * d * anim * 0.5f;
                 }
 
                 return fixed4(finalColor, 1.0);
