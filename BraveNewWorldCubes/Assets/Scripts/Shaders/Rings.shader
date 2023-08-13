@@ -41,9 +41,9 @@ Shader "Custom/CirclePatternOnCube"
                 float g = 0, o = 0, f = 3.;
                 float2 n = i.uv * 2.0 - 1.0;
 
-                while (g++ < 2e2 && f > .001)
+                while (g++ < 2e2 && f > 0.001)
                 {
-                    float3 e = o * normalize(float3(n, 1.));
+                    float3 e = o * normalize(float3(n, 1.0));
                     e.z += _Time.y * 0.5;
                     const float l = floor(e.z + 0.5);
                     f = 2.0 - length(e.xy) - o * 0.1;

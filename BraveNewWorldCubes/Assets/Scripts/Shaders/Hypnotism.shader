@@ -39,28 +39,28 @@ Shader "Custom/Hypnotism"
                 return o;
             }
 
-            #define c(a) (sin(a)*.5+.5)
-            #define g    (_Time.y*.5)
+            #define c(a) (sin(a) * 0.5 + 0.5)
+            #define g    (_Time.y * 0.5)
 
             float sphereSDF(float3 p, float r) {
                 return length(p) - r;
             }
 
             half4 frag (v2f i) : SV_Target
-{
-    float r = 0.0, t = 3.0;
-    float3 p = float3(i.uv, 1.0) * 2.0 - 1.0;
-    p.z += g * 0.5; // Slow down time-based animation
+            {
+                float r = 0.0, t = 3.0;
+                float3 p = float3(i.uv, 1.0) * 2.0 - 1.0;
+                p.z += g * 0.5; // Slow down time-based animation
 
-    for (float a = 0.; a < 150. && t > .002*r && r < 50.; a++) {
-        const float angle = lerp(c(g), -c(g), c((g-3.14)/2.)) * r;
-        const float2x2 rotationMatrix = float2x2(cos(angle), -sin(angle), sin(angle), cos(angle));
-        p.xy = mul(rotationMatrix, p.xy);
-        r += t = max(sphereSDF(p, 0.3), -sphereSDF(p, 1.1)) * 0.2; // Reduced ray advancement
-    }
+                for (float a = 0.; a < 150.0 && t > 0.002 * r && r < 50.0; a++) {
+                    const float angle = lerp(c(g), -c(g), c((g - 3.14) / 2.0)) * r;
+                    const float2x2 rotationMatrix = float2x2(cos(angle), -sin(angle), sin(angle), cos(angle));
+                    p.xy = mul(rotationMatrix, p.xy);
+                    r += t = max(sphereSDF(p, 0.3), -sphereSDF(p, 1.1)) * 0.2; // Reduced ray advancement
+                }
 
-    return half4(cos(float3(lerp(2.05,1.85,c(g)),2.1,2.15)*r-g) * exp2(-r*.06), 1.0);
-}
+                return half4(cos(float3(lerp(2.05, 1.85, c(g)), 2.1, 2.15) * r - g) * exp2(-r * 0.06), 1.0);
+            }
 
             ENDCG
         }

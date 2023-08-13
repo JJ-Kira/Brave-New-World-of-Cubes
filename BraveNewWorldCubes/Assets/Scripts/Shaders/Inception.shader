@@ -41,7 +41,7 @@ Shader "Custom/CubeInCube"
 
             float4 hash4(int n)
             {
-                return frac(sin(float4(532.894,392.843,402.942,837.098)*float(n+1))*4444.5);
+                return frac(sin(float4(532.894, 392.843, 402.942, 837.098) * float(n + 1)) * 4444.5);
             }
 
             void qrot(inout float3 v, in float4 q)
