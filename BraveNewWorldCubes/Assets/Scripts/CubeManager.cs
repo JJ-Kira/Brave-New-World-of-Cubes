@@ -1,10 +1,12 @@
+using System.Collections.Generic;
 using DG.Tweening;
 using UnityEngine;
 
-public class CubeSpawner : MonoBehaviour
+public class CubeManager : MonoBehaviour
 {
-    [SerializeField] private RectTransform portalImage;
+    [SerializeField] private List<Material> variants;
     [SerializeField] private GameObject cubePrefab;
+    [SerializeField] private RectTransform portalImage;
     private Transform cameraTransform;
     
     void Start()
@@ -16,7 +18,13 @@ public class CubeSpawner : MonoBehaviour
     public void SpawnCube()
     {
         Tween cubeSpawnTween = portalImage.DOScale(Vector3.one, 2.0f);
-        cubeSpawnTween.onComplete = () => Instantiate(cubePrefab, new Vector3(cameraTransform.position.x, cameraTransform.position.y + 2.0f, cameraTransform.position.z + 1.0f), Quaternion.identity);
+        cubeSpawnTween.onComplete = () =>
+        {
+            
+            var cube = Instantiate(cubePrefab, new Vector3(cameraTransform.position.x, cameraTransform.position.y + 2.0f,
+                        cameraTransform.position.z + 1.0f), Quaternion.identity);
+            cube.GetComponent<MeshRenderer>().material = variants[Random.Range(0, variants.Count - 1)];
+        };
         
         DOTween.Sequence()
             .Insert(0.0f, portalImage.DOLocalMove(new Vector3(cameraTransform.position.x + 1.0f, cameraTransform.position.y, 0.0f), 0.01f))
