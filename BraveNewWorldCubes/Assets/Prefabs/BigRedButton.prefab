@@ -569,6 +569,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 6592419306724728257}
+  - component: {fileID: 6201152005384925654}
   m_Layer: 0
   m_Name: BigRedButton
   m_TagString: Untagged
@@ -594,6 +595,32 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &6201152005384925654
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6592419306724728271}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b70e70ee3ea2f6b4a88baa7ab83b0928, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  variants:
+  - {fileID: 2100000, guid: f75d7198ab8ff9c49a4eebda2878b55d, type: 2}
+  - {fileID: 2100000, guid: 9ce8168e240a797498f433e52bba2261, type: 2}
+  - {fileID: 2100000, guid: 97dc28a0650a7d14aa5b8dac8995d6b9, type: 2}
+  - {fileID: 2100000, guid: 23e2d6baa8c49e847819d14f8420c3e5, type: 2}
+  - {fileID: 2100000, guid: de92ac47b631b024a826235f1b007a6d, type: 2}
+  - {fileID: 2100000, guid: 9381239a3de0b1c46b511ecfa3d25f14, type: 2}
+  - {fileID: 2100000, guid: 2c7824cccd6e2a243a328b4f08ef9f24, type: 2}
+  - {fileID: 2100000, guid: a8c517108870d654db03b98169176f55, type: 2}
+  - {fileID: 2100000, guid: 26be0ef1f3b7d854b956eccde713ab30, type: 2}
+  - {fileID: 2100000, guid: 5da57ebcc9e8d64459256e794f35dd49, type: 2}
+  - {fileID: 2100000, guid: a4c6648f4c962e547a4f0c9b7b6862bc, type: 2}
+  cubePrefab: {fileID: 6135024222521940452, guid: 0cbfa849e52159f458af9d608cb3789e, type: 3}
+  portalImage: {fileID: 0}
 --- !u!1 &6592419306896819028
 GameObject:
   m_ObjectHideFlags: 0

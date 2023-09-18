@@ -28,6 +28,7 @@ Transform:
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 0
@@ -44,10 +45,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f2253d75e3ddc644b8153409c62dd74e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  PlanePrefab: {fileID: 0}
-  VolumePrefab: {fileID: 0}
+  PlanePrefab: {fileID: 2107458253378869099, guid: abba16cec0fae954184ee66442976bbc, type: 3}
+  VolumePrefab: {fileID: 2107458253378869099, guid: 0c5e93aa618adc240a0329281ec1eb5d, type: 3}
   PrefabOverrides: []
   VerboseLogging: 0
+  MaxSceneAnchorUpdatesPerFrame: 3
+  _initialAnchorParent: {fileID: 0}
 --- !u!114 &3492968334703562747
 MonoBehaviour:
   m_ObjectHideFlags: 0

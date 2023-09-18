@@ -6,6 +6,8 @@ public class BottleInteraction : MonoBehaviour
     public float detectionDistance = 0.2f; // Distance threshold for detecting proximity to head
     public float tiltAngleThreshold = 30f; // Tilt angle threshold for detecting the tilt gesture
 
+    [SerializeField] private CubeManager cubeManager;
+
     private bool isHeld = false;
 
     void Start()
@@ -36,6 +38,7 @@ public class BottleInteraction : MonoBehaviour
                     // You can place your desired actions or events here
                     Debug.Log("Player is drinking from the bottle!");
                     isHeld = true;
+                    cubeManager.ShuffleVariants();
                 }
             }
             else
